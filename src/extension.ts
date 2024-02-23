@@ -4,7 +4,7 @@ import { commandHandler, commandId } from './command';
 
 export function activate(context: ExtensionContext) {
   const selector: DocumentFilter[] = [];
-  for (const language of ['typescript', 'typescriptreact']) {
+  for (const language of ['typescript', 'typescriptreact', 'svelte']) {
     selector.push({ language, scheme: 'file' });
     selector.push({ language, scheme: 'untitled' });
   }
