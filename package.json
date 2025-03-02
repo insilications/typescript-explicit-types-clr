@@ -8,7 +8,7 @@
   "publisher": "boni-dev",
   "private": true,
   "engines": {
-    "vscode": "^1.87.0"
+    "vscode": "^1.97.0"
   },
   "categories": [
     "Programming Languages"
@@ -56,19 +56,20 @@
   },
   "devDependencies": {
     "@types/lodash.uniqwith": "^4.5.9",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.11.20",
-    "@types/vscode": "^1.86.0",
-    "@typescript-eslint/eslint-plugin": "^7.0.2",
-    "@typescript-eslint/parser": "^7.0.2",
-    "eslint": "^8.56.0",
-    "glob": "^10.3.10",
-    "mocha": "^10.3.0",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.3.3",
-    "vscode-test": "^1.4.0",
-    "webpack": "^5.90.3",
-    "webpack-cli": "^5.1.4"
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.13.8",
+    "@types/vscode": "^1.97.0",
+    "@typescript-eslint/eslint-plugin": "^8.25.0",
+    "@typescript-eslint/parser": "^8.25.0",
+    "ajv": "^8.17.1",
+    "eslint": "^9.21.0",
+    "glob": "^11.0.1",
+    "mocha": "^11.1.0",
+    "ts-loader": "^9.5.2",
+    "typescript": "^5.8.2",
+    "vscode-test": "^1.6.1",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "lodash.uniqwith": "^4.5.0"
