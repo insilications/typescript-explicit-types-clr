@@ -82,23 +82,26 @@ export class GenereateTypeProvider implements CodeActionProvider {
       lineNumber <= range.end.line;
       lineNumber++
     ) {
-      const line = document.lineAt(lineNumber);
-      const startCharNumber =
-        lineNumber === range.start.line ? range.start.character : 0;
-      const endCharNumber =
-        lineNumber === range.end.line
-          ? range.end.character
-          : line.range.end.character;
-      for (
-        let charNumber = startCharNumber;
-        charNumber <= endCharNumber;
-        charNumber++
-      ) {
-        const foundDefinitions = await executeDefinitionProvider(
-          document.uri,
-          new Position(lineNumber, charNumber)
-        );
-        if (foundDefinitions?.length) allDefinitions.push(foundDefinitions[0]);
+      if (lineNumber < document.lineCount) {
+        const line = document.lineAt(lineNumber);
+        const startCharNumber =
+          lineNumber === range.start.line ? range.start.character : 0;
+        const endCharNumber =
+          lineNumber === range.end.line
+            ? range.end.character
+            : line.range.end.character;
+        for (
+          let charNumber = startCharNumber;
+          charNumber <= endCharNumber;
+          charNumber++
+        ) {
+          const foundDefinitions = await executeDefinitionProvider(
+            document.uri,
+            new Position(lineNumber, charNumber)
+          );
+          if (foundDefinitions?.length)
+            allDefinitions.push(foundDefinitions[0]);
+        }
       }
     }
 
