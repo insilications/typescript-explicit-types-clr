@@ -2,13 +2,13 @@
   "name": "typescript-explicit-types",
   "displayName": "TypeScript Explicit Types",
   "description": "Generate explicit type annotation from inferred type in TypeScript",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "icon": "logo.png",
   "repository": "https://github.com/nick-lvov-dev/typescript-explicit-types",
   "publisher": "boni-dev",
   "private": true,
   "engines": {
-    "vscode": "^1.97.0"
+    "vscode": "^1.100.0"
   },
   "categories": [
     "Programming Languages"
@@ -57,12 +57,12 @@
   "devDependencies": {
     "@types/lodash.uniqwith": "^4.5.9",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^22.13.8",
-    "@types/vscode": "^1.97.0",
-    "@typescript-eslint/eslint-plugin": "^8.25.0",
-    "@typescript-eslint/parser": "^8.25.0",
+    "@types/node": "^22.14.0",
+    "@types/vscode": "^1.99.0",
+    "@typescript-eslint/eslint-plugin": "^8.29.0",
+    "@typescript-eslint/parser": "^8.29.0",
     "ajv": "^8.17.1",
-    "eslint": "^9.21.0",
+    "eslint": "^9.23.0",
     "glob": "^11.0.1",
     "mocha": "^11.1.0",
     "ts-loader": "^9.5.2",
