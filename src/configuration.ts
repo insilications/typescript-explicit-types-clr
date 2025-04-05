@@ -1,6 +1,6 @@
-export const configurationId = 'typescriptExplicitTypes';
+export const configurationId = "typescriptExplicitTypes";
 
 export enum ConfigurationKey {
-  preferable = 'preferable',
-  formatAfterGeneration = 'formatAfterGeneration',
+  preferable = "preferable",
+  formatAfterGeneration = "formatAfterGeneration",
 }

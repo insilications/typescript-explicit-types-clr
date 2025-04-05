@@ -3,6 +3,7 @@ import {
   Position,
   Range,
   TextEdit,
+  Selection,
   TextEditor,
   Uri,
   window,
@@ -78,27 +79,53 @@ export const commandHandler = async (
 
 export const toogleQuotesCommandId = "extension.toggleQuotes";
 
-export interface Quotes { begin: string, end: string };
+export interface Quotes {
+  begin: string;
+  end: string;
+}
 
 // look at: https://github.com/dbankier/vscode-quick-select/blob/master/src/extension.ts
 export function toggleQuotes() {
-  let editor = window.activeTextEditor;
-  let doc = editor.document;
+  const editor: TextEditor | undefined = window.activeTextEditor;
+  if (!editor) {
+    return;
+  }
+  const doc = editor.document;
 
   let chars = [];
 
   try {
     chars = getChars(editor);
   } catch (e) {
-    window.showErrorMessage(e.message);
+    window.showErrorMessage((e as Error).message);
     return;
   }
 
   const changes: { char: string; selection: Selection }[] = [];
 
   for (const sel of editor.selections) {
+    console.log(
+      `toggleQuotes - sel.start.line: ${sel.start.line} - sel.start.character: ${sel.start.character}`,
+    );
+    console.log(
+      `toggleQuotes - sel.end.line: ${sel.end.line} - sel.end.character: ${sel.end.character}`,
+    );
+    console.log(
+      `toggleQuotes - sel.anchor.line: ${sel.anchor.line} - sel.anchor.character: ${sel.anchor.character}`,
+    );
+    console.log(
+      `toggleQuotes - sel.active.line: ${sel.active.line} - sel.active.character: ${sel.active.character}`,
+    );
+    const contentSelRange = new Range(sel.start, sel.end);
+    if (contentSelRange) {
+      const contentSel = doc.getText(contentSelRange);
+      console.log(`toggleQuotes - contentSel: ${contentSel}`);
+    }
+
     const content = doc.lineAt(sel.start.line);
     const charInfo = findChar(chars, content.text, sel);
+
+    console.log(`toggleQuotes - content.text: ${content.text}`);
 
     if (charInfo) {
       const foundCharIdx = chars.indexOf(charInfo.foundQuotes);
@@ -141,7 +168,7 @@ function findChar(
   let start: number = -1;
   let end: number = -1;
 
-  let foundQuotes: Quotes = null;
+  let foundQuotes: Quotes | null | undefined = null;
 
   // find the index of next char from end selection
   for (let i = sel.end.character; i < txt.length; i++) {
@@ -161,31 +188,40 @@ function findChar(
     const c = txt[i];
     const beforeC = i > 0 ? txt[i - 1] : null; // the previous character (to see if it is '\')
     if (beforeC !== "\\") {
-      if (foundQuotes.begin === c) {
+      if (foundQuotes?.begin === c) {
         start = i;
         break;
       }
     }
   }
 
-  if (start > -1 && end > -1) {
-    return { start, end, foundQuotes };
-  } else {
-    return null;
+  if (foundQuotes) {
+    if (start > -1 && end > -1) {
+      return { start, end, foundQuotes };
+    }
+    // else {
+    //   return null;
+    // }
   }
+  return null;
 }
 
-export type ToggleQuotesConfigurationChars = (string | [string, string] | Quotes)[];
+export type ToggleQuotesConfigurationChars = (
+  | string
+  | [string, string]
+  | Quotes
+)[];
 
 export interface ToggleQuotesConfiguration {
-  "chars": ToggleQuotesConfigurationChars;
+  chars: ToggleQuotesConfigurationChars;
   // "chars": string[] | Quotes | [string, string];
 }
 
 function getChars(editor: TextEditor): Quotes[] {
   const maybeChars = workspace
     .getConfiguration(configurationId, editor.document)
-    .get<ToggleQuotesConfiguration>("togglequotes").get<string[]>("chars");
+    .get<ToggleQuotesConfiguration>("togglequotes")?.chars;
+  // .get<ToggleQuotesConfiguration>("togglequotes").get("chars");
   const chars = Array.isArray(maybeChars) ? maybeChars : [];
 
   // Transform properties to begin/end pair
@@ -212,5 +248,5 @@ function getChars(editor: TextEditor): Quotes[] {
     }
   });
 
-  return chars;
+  return chars as Quotes[];
 }

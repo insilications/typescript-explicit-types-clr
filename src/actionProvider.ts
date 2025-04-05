@@ -37,7 +37,7 @@ function executeHoverProvider(uri: Uri, position: Position) {
   return commands.executeCommand<Hover[]>(
     "vscode.executeHoverProvider",
     uri,
-    position
+    position,
   );
 }
 
@@ -45,14 +45,14 @@ function executeDefinitionProvider(uri: Uri, position: Position) {
   return commands.executeCommand<Location[]>(
     "vscode.executeDefinitionProvider",
     uri,
-    position
+    position,
   );
 }
 
 function executeSymbolProvider(uri: Uri) {
   return commands.executeCommand<DocumentSymbol[]>(
     "vscode.executeDocumentSymbolProvider",
-    uri
+    uri,
   );
 }
 
@@ -71,7 +71,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
   public async provideCodeActions(
     document: TextDocument,
     range: Range | Selection,
-    context: CodeActionContext
+    context: CodeActionContext,
   ): Promise<CodeAction[]> {
     const config = workspace.getConfiguration(configurationId);
     const isPreferrable = config.get<boolean>(ConfigurationKey.preferable);
@@ -97,7 +97,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
         ) {
           const foundDefinitions = await executeDefinitionProvider(
             document.uri,
-            new Position(lineNumber, charNumber)
+            new Position(lineNumber, charNumber),
           );
           if (foundDefinitions?.length)
             allDefinitions.push(foundDefinitions[0]);
@@ -108,7 +108,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
     if (!allDefinitions.length) return [];
 
     const definitions = uniqWith(allDefinitions, (a, b) =>
-      a.originSelectionRange.isEqual(b.originSelectionRange)
+      a.originSelectionRange.isEqual(b.originSelectionRange),
     );
     const symbols = await executeSymbolProvider(document.uri);
 
@@ -116,14 +116,14 @@ export class GenereateTypeProvider implements CodeActionProvider {
     for (const definition of definitions) {
       const hoverRes = await executeHoverProvider(
         document.uri,
-        definition.originSelectionRange.start
+        definition.originSelectionRange.start,
       );
       if (!hoverRes) continue;
 
       const tsHoverContent = hoverRes
         .reduce<string[]>(
           (acc, val) => acc.concat(val.contents.map((x) => x.value)),
-          []
+          [],
         )
         .find((x) => {
           return x.includes("typescript") && !x.includes("⚠");
@@ -132,7 +132,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
 
       const word = document.getText(definition.originSelectionRange);
       const lineText = document.getText(
-        document.lineAt(definition.originSelectionRange.start.line).range
+        document.lineAt(definition.originSelectionRange.start.line).range,
       );
 
       // => is recognized as a definition, but it's type is usually defined before, unlike all other types
@@ -144,7 +144,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
         if (!matches.length) continue;
 
         const passedIndex = indexes.find(
-          (i) => i > definition.originSelectionRange.start.character
+          (i) => i > definition.originSelectionRange.start.character,
         );
 
         // look for a potential index of a match
@@ -169,20 +169,20 @@ export class GenereateTypeProvider implements CodeActionProvider {
           typescriptHoverResult: tsHoverContent,
           typePosition: new Position(
             definition.originSelectionRange.start.line,
-            potentialIndex + 1
+            potentialIndex + 1,
           ),
         });
         continue;
       }
 
       const symbol = symbols?.find((x) =>
-        x.selectionRange.contains(definition.originSelectionRange)
+        x.selectionRange.contains(definition.originSelectionRange),
       );
       const trailingSlice = document.getText(
         new Range(
           definition.originSelectionRange.end,
-          definition.targetRange.end
-        )
+          definition.targetRange.end,
+        ),
       );
       const isFollowedByBracket = !!trailingSlice.match(/^(\s|\\[rn])*\(/);
       if (
@@ -195,7 +195,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
         const firstBracket = trailingSlice.indexOf("(");
         const closingBracketIndex = findClosingBracketMatchIndex(
           trailingSlice,
-          firstBracket
+          firstBracket,
         );
 
         const isFunctionTyped = trailingSlice
@@ -216,7 +216,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
         // check if type annotation is already present
         const typePosition = new Position(
           definition.originSelectionRange.end.line,
-          definition.originSelectionRange.end.character
+          definition.originSelectionRange.end.character,
         );
         const slice = lineText.slice(typePosition.character);
         const match = slice.match(/^\s*:/g);
@@ -233,7 +233,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
 
     const action = new CodeAction(
       "Generate explicit type",
-      CodeActionKind.QuickFix
+      CodeActionKind.QuickFix,
     );
     const args: Parameters<typeof commandHandler> = [generateTypeInfos];
     action.command = {
