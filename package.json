@@ -50,15 +50,50 @@
         },
         "typescriptExplicitTypes.togglequotes.chars": {
           "type": "array",
+          "description": "An array defining the quote characters or pairs to toggle between.",
           "items": {
-            "type": "string"
-          },
-          "default": [
-            "\"",
-            "'"
-          ],
-          "description": "The quote characters to toggle between.",
-          "scope": "language-overridable"
+            "oneOf": [
+              {
+                "type": "string",
+                "description": "A single character used for both beginning and end quotes (e.g., `'`)."
+              },
+              {
+                "type": "array",
+                "description": "A tuple representing a begin and end quote pair (e.g., `['(', ')']`).",
+                "minItems": 2,
+                "maxItems": 2,
+                "items": [
+                  {
+                    "type": "string",
+                    "description": "The beginning quote character/string."
+                  },
+                  {
+                    "type": "string",
+                    "description": "The ending quote character/string."
+                  }
+                ]
+              },
+              {
+                "type": "object",
+                "description": "An object explicitly defining begin and end quote strings.",
+                "properties": {
+                  "begin": {
+                    "type": "string",
+                    "description": "The beginning quote character/string."
+                  },
+                  "end": {
+                    "type": "string",
+                    "description": "The ending quote character/string."
+                  }
+                },
+                "required": [
+                  "begin",
+                  "end"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
         }
       }
     },
