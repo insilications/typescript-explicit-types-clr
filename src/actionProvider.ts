@@ -17,7 +17,7 @@ import {
   workspace,
 } from "vscode";
 import { commandHandler, GenerateTypeInfo } from "./command";
-import { configurationId, ConfigurationKey } from "./configuraiton";
+import { configurationId, ConfigurationKey } from "./configuration";
 import { findClosingBracketMatchIndex } from "./helpers/findClosingBracketMatchIndex";
 import { findMatches } from "./helpers/findMatches";
 

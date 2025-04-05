@@ -2,7 +2,7 @@
   "name": "typescript-explicit-types",
   "displayName": "TypeScript Explicit Types",
   "description": "Generate explicit type annotation from inferred type in TypeScript",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "icon": "logo.png",
   "repository": "https://github.com/nick-lvov-dev/typescript-explicit-types",
   "publisher": "boni-dev",
@@ -16,7 +16,12 @@
   "activationEvents": [
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
-    "onLanguage:svelte"
+    "onLanguage:svelte",
+    "onCommand:extension.toggleQuotes"
+  ],
+  "extensionKind": [
+    "ui",
+    "workspace"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -24,6 +29,10 @@
       {
         "command": "extension.generateExplicitType",
         "title": "Generate explicit type"
+      },
+      {
+        "command": "extension.toggleQuotes",
+        "title": "Toggle Quote"
       }
     ],
     "configuration": {
@@ -38,7 +47,84 @@
           "type": "boolean",
           "default": true,
           "description": "Run document format action after a type has been generated."
+        },
+        "typescriptExplicitTypes.togglequotes.chars": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "\"",
+            "'"
+          ],
+          "description": "The quote characters to toggle between.",
+          "scope": "language-overridable"
         }
+      }
+    },
+    "configurationDefaults": {
+      "[typescript]": {
+        "typescriptExplicitTypes.togglequotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
+      },
+      "[javascript]": {
+        "typescriptExplicitTypes.togglequotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
+      },
+      "[typescriptreact]": {
+        "typescriptExplicitTypes.togglequotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
+      },
+      "[javascriptreact]": {
+        "typescriptExplicitTypes.togglequotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
+      },
+      "[svelte]": {
+        "typescriptExplicitTypes.togglequotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
+      },
+      "[vue]": {
+        "typescriptExplicitTypes.togglequotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
+      },
+      "[astro]": {
+        "typescriptExplicitTypes.togglequotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
+      },
+      "[markdown]": {
+        "typescriptExplicitTypes.togglequotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
+      },
+      "[go]": {
+        "typescriptExplicitTypes.togglequotes.chars": [
+          "\"",
+          "'",
+          "`"
+        ]
       }
     }
   },
