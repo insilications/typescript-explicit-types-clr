@@ -104,28 +104,28 @@ export function toggleQuotes() {
   const changes: { char: string; selection: Selection }[] = [];
 
   for (const sel of editor.selections) {
-    console.log(
-      `toggleQuotes - sel.start.line: ${sel.start.line} - sel.start.character: ${sel.start.character}`,
-    );
-    console.log(
-      `toggleQuotes - sel.end.line: ${sel.end.line} - sel.end.character: ${sel.end.character}`,
-    );
-    console.log(
-      `toggleQuotes - sel.anchor.line: ${sel.anchor.line} - sel.anchor.character: ${sel.anchor.character}`,
-    );
-    console.log(
-      `toggleQuotes - sel.active.line: ${sel.active.line} - sel.active.character: ${sel.active.character}`,
-    );
+    // console.log(
+    //   `toggleQuotes - sel.start.line: ${sel.start.line} - sel.start.character: ${sel.start.character}`,
+    // );
+    // console.log(
+    //   `toggleQuotes - sel.end.line: ${sel.end.line} - sel.end.character: ${sel.end.character}`,
+    // );
+    // console.log(
+    //   `toggleQuotes - sel.anchor.line: ${sel.anchor.line} - sel.anchor.character: ${sel.anchor.character}`,
+    // );
+    // console.log(
+    //   `toggleQuotes - sel.active.line: ${sel.active.line} - sel.active.character: ${sel.active.character}`,
+    // );
     const contentSelRange = new Range(sel.start, sel.end);
     if (contentSelRange) {
       const contentSel = doc.getText(contentSelRange);
-      console.log(`toggleQuotes - contentSel: ${contentSel}`);
+      // console.log(`toggleQuotes - contentSel: ${contentSel}`);
     }
 
     const content = doc.lineAt(sel.start.line);
     const charInfo = findChar(chars, content.text, sel);
 
-    console.log(`toggleQuotes - content.text: ${content.text}`);
+    // console.log(`toggleQuotes - content.text: ${content.text}`);
 
     if (charInfo) {
       const foundCharIdx = chars.indexOf(charInfo.foundQuotes);
