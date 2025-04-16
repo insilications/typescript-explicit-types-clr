@@ -1,21 +1,13 @@
-import {
-  commands,
-  DocumentFilter,
-  ExtensionContext,
-  languages,
-  extensions,
-  window,
-  Range,
-} from 'vscode';
+import { OverviewRulerLane, window, Range } from 'vscode';
 import type { TextEditor } from 'vscode';
-import type { GitExtension, API as GitAPI, Repository, Git } from './types/git';
+import type { API as GitAPI, Repository } from './types/git';
+import { outputChannel } from './extension';
 
 const latestCommitHighlightDecorationType = window.createTextEditorDecorationType({
-  backgroundColor: 'rgba(0, 255, 21, 0.3)', // Example: semi-transparent yellow
+  backgroundColor: 'rgba(0, 255, 21, 0.2)',
   isWholeLine: true,
-  // You can add gutter icons, overview ruler colors etc.
-  // overviewRulerColor: 'yellow',
-  // overviewRulerLane: vscode.OverviewRulerLane.Left,
+  overviewRulerLane: OverviewRulerLane.Left,
+  overviewRulerColor: 'rgba(43, 255, 0, 1)',
 });
 
 export async function updateDecorations(editor: TextEditor, gitApi: GitAPI) {
@@ -26,7 +18,7 @@ export async function updateDecorations(editor: TextEditor, gitApi: GitAPI) {
     return;
   }
 
-  const repo = gitApi.getRepository(docUri);
+  const repo: Repository | null = gitApi.getRepository(docUri);
   if (!repo) {
     // Not in a Git repository
     editor.setDecorations(latestCommitHighlightDecorationType, []); // Clear decorations
@@ -35,9 +27,16 @@ export async function updateDecorations(editor: TextEditor, gitApi: GitAPI) {
 
   try {
     const currentFilePath = docUri.fsPath;
+    outputChannel!.appendLine(`1 - updateDecorations - currentFilePath: ${currentFilePath}`);
     // Need the file path relative to the repository root
     const repoRoot = repo.rootUri.fsPath;
+    outputChannel!.appendLine(`2 - updateDecorations - repoRoot: ${repoRoot}`);
     const relativePath = currentFilePath.substring(repoRoot.length + 1).replace(/\\/g, '/'); // Normalize path separators
+    outputChannel!.appendLine(`3 - updateDecorations - relativePath: ${relativePath}`);
+
+    //     2025-04-16 11:00:50.885 [info] 1 - updateDecorations - currentFilePath: /aot/stuff/dev/public/LibreChat/client/src/hooks/SSE/useEventHandlers.ts
+    // 2025-04-16 11:00:50.885 [info] 2 - updateDecorations - repoRoot: /aot/stuff/dev/public/LibreChat
+    // 2025-04-16 11:00:50.885 [info] 3 - updateDecorations - relativePath: client/src/hooks/SSE/useEventHandlers.ts
 
     // 1. Get HEAD commit
     const headCommit = await repo.getCommit('HEAD');
@@ -51,6 +50,7 @@ export async function updateDecorations(editor: TextEditor, gitApi: GitAPI) {
     // 2. Get the diff between HEAD and its parent for this file
     // The API provides `repo.diffBetween()`
     const diffOutput = await repo.diffBetween(parentCommitSha, 'HEAD', relativePath);
+    outputChannel!.appendLine(`4 - updateDecorations - diffOutput: ${diffOutput}`);
 
     // 3. Parse the diff to find changed lines
     const changedRanges: Range[] = [];
@@ -58,7 +58,7 @@ export async function updateDecorations(editor: TextEditor, gitApi: GitAPI) {
     // Typically, it provides hunk information. You need to parse this to map
     // line numbers in the *current* file (HEAD version) that were changed.
     // Example parsing logic (needs refinement based on actual diff format):
-    const diffLines = diffOutput.split('\n');
+    const diffLines: string[] = diffOutput.split('\n');
     let currentLineNumber = -1; // Line number in the *new* file (HEAD)
 
     for (const line of diffLines) {
@@ -91,7 +91,8 @@ export async function updateDecorations(editor: TextEditor, gitApi: GitAPI) {
     // 4. Apply decorations
     editor.setDecorations(latestCommitHighlightDecorationType, changedRanges);
   } catch (error) {
-    console.error('Error getting git diff for decorations:', error);
+    outputChannel!.error('Error getting git diff for decorations:', error); // Log errors
+    outputChannel!.show(); // Optionally show the channel on error
     // Clear decorations on error
     editor.setDecorations(latestCommitHighlightDecorationType, []);
   }

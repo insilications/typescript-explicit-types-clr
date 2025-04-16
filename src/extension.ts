@@ -1,8 +1,11 @@
 import { commands, DocumentFilter, ExtensionContext, languages, extensions, window } from 'vscode';
+import type { LogOutputChannel } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
 import { commandHandler, commandId, toogleQuotesCommandId, toggleQuotes } from './command';
-import type { GitExtension, API as GitAPI, Repository, Git } from './types/git';
+import type { GitExtension, API as GitAPI } from './types/git';
 import { updateDecorations } from './blameLineHighlight';
+
+export let outputChannel: LogOutputChannel | undefined;
 
 export async function activate(context: ExtensionContext) {
   const selector: DocumentFilter[] = [];
@@ -24,9 +27,11 @@ export async function activate(context: ExtensionContext) {
   context.subscriptions.push(codeActionProvider);
   context.subscriptions.push(toggleQuotesCommand);
 
+  outputChannel = window.createOutputChannel('typescript-explicit-types', { log: true }); // Create a custom channel
+
   const gitExtension = extensions.getExtension<GitExtension>('vscode.git')?.exports;
   if (!gitExtension) {
-    window.showErrorMessage('typescript-explicit-types: tGit extension is not available.');
+    window.showErrorMessage('typescript-explicit-types: vscode.git extension is not available.');
     return;
   }
   const gitApi: GitAPI = gitExtension.getAPI(1);
@@ -48,4 +53,13 @@ export async function activate(context: ExtensionContext) {
   // Optional: Listen for Git state changes to update decorations
   // gitApi.onDidOpenRepository(repo => { /* ... */ });
   // repo.state.onDidChange(() => { /* ... update for relevant editor ... */ });
+
+  outputChannel.appendLine('Extension activated.'); // Initial activation log
+}
+
+export function deactivate() {
+  if (outputChannel) {
+    outputChannel.appendLine('Extension deactivated.'); // Clean up logs
+    outputChannel.dispose(); // Dispose to free resources
+  }
 }
