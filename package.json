@@ -16,11 +16,13 @@
   "categories": [
     "Programming Languages"
   ],
+  "extensionDependencies": [
+    "vscode.git"
+  ],
   "activationEvents": [
     "onLanguage:typescript",
     "onLanguage:typescriptreact",
-    "onLanguage:svelte",
-    "onCommand:extension.toggleQuotes"
+    "onLanguage:svelte"
   ],
   "extensionKind": [
     "ui",

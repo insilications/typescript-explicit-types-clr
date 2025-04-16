@@ -16,7 +16,8 @@
     "isolatedModules": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "noImplicitOverride": true,
+    "noImplicitOverride": true
   },
-  "exclude": ["node_modules/", ".vscode-test", "eslint.config.mjs"]
+  "exclude": ["node_modules", ".vscode-test", "eslint.config.mjs"],
+  "include": ["src/**/*", "src/types/*.d.ts"]
 }
