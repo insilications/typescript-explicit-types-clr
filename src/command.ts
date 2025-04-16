@@ -9,9 +9,9 @@ import {
   window,
   workspace,
   WorkspaceEdit,
-} from "vscode";
-import { findMatchIndexes } from "./helpers/findMatches";
-import { configurationId } from "./configuration";
+} from 'vscode';
+import { findMatchIndexes } from './helpers/findMatches';
+import { configurationId } from './configuration';
 
 export interface GenerateTypeInfo {
   typescriptHoverResult: string;
@@ -20,10 +20,7 @@ export interface GenerateTypeInfo {
 }
 
 function executeFormatDocumentProvider(uri: Uri) {
-  return commands.executeCommand<TextEdit[]>(
-    "vscode.executeFormatDocumentProvider",
-    uri,
-  );
+  return commands.executeCommand<TextEdit[]>('vscode.executeFormatDocumentProvider', uri);
 }
 
 const generateType = async (
@@ -32,43 +29,48 @@ const generateType = async (
   isAutoFormatOn?: boolean,
 ) => {
   const indexes = findMatchIndexes(/:/gm, typescriptHoverResult);
-  const dirtyType = typescriptHoverResult.slice(
-    isFunction ? indexes.slice(-1)[0] : indexes[0],
-  );
-  const cleanType = dirtyType.replace(/(`)/gm, "").replace(/\n+$/, "");
-  await editor.edit((editor) => editor.insert(typePosition, cleanType));
+  const dirtyType = typescriptHoverResult.slice(isFunction ? indexes.slice(-1)[0] : indexes[0]);
+  const cleanType = dirtyType.replace(/(`)/gm, '').replace(/\n+$/, '');
+  await editor.edit((editor) => {
+    editor.insert(typePosition, cleanType);
+  });
 
-  if (!isAutoFormatOn) return;
+  if (!isAutoFormatOn) {
+    return;
+  }
 
   const document = editor.document;
   const text = document.getText();
   const typeIndex = text.indexOf(
-    cleanType.replace(/\n/gm, "\r\n"),
+    cleanType.replace(/\n/gm, '\r\n'),
     document.offsetAt(typePosition),
   );
-  if (typeIndex < 0) return;
+  if (typeIndex < 0) {
+    return;
+  }
 
   const typePositionStart = document.positionAt(typeIndex);
   const typePositionEnd = document.positionAt(
     typeIndex + cleanType.length + (cleanType.match(/\n/gm)?.length ?? 0),
   );
   const typeRange = new Range(typePositionStart, typePositionEnd);
-  if (!typeRange) return;
+  if (!typeRange) {
+    return;
+  }
 
   if (isAutoFormatOn) {
     const edits = await executeFormatDocumentProvider(document.uri);
-    if (!edits) return;
+    if (!edits) {
+      return;
+    }
     const workspaceEdit = new WorkspaceEdit();
     workspaceEdit.set(document.uri, edits);
     await workspace.applyEdit(workspaceEdit);
   }
 };
 
-export const commandId = "extension.generateExplicitType";
-export const commandHandler = async (
-  generateTypeInfos: GenerateTypeInfo[],
-  autoImport = false,
-) => {
+export const commandId = 'extension.generateExplicitType';
+export const commandHandler = async (generateTypeInfos: GenerateTypeInfo[], autoImport = false) => {
   const editor = window.activeTextEditor;
   if (!editor) {
     return;
@@ -77,7 +79,7 @@ export const commandHandler = async (
   await generateType(generateTypeInfos[0], editor, autoImport);
 };
 
-export const toogleQuotesCommandId = "extension.toggleQuotes";
+export const toogleQuotesCommandId = 'extension.toggleQuotes';
 
 export interface Quotes {
   begin: string;
@@ -116,11 +118,11 @@ export function toggleQuotes() {
     // console.log(
     //   `toggleQuotes - sel.active.line: ${sel.active.line} - sel.active.character: ${sel.active.character}`,
     // );
-    const contentSelRange = new Range(sel.start, sel.end);
-    if (contentSelRange) {
-      const contentSel = doc.getText(contentSelRange);
-      // console.log(`toggleQuotes - contentSel: ${contentSel}`);
-    }
+    // const contentSelRange = new Range(sel.start, sel.end);
+    // if (contentSelRange) {
+    // const contentSel = doc.getText(contentSelRange);
+    // console.log(`toggleQuotes - contentSel: ${contentSel}`);
+    // }
 
     const content = doc.lineAt(sel.start.line);
     const charInfo = findChar(chars, content.text, sel);
@@ -133,10 +135,7 @@ export function toggleQuotes() {
       // console.log(`found ${charInfo.start} - ${charInfo.end} will change to : ${nextChar}`);
 
       const first = new Position(sel.start.line, charInfo.start);
-      const firstSelection = new Selection(
-        first,
-        new Position(first.line, first.character + 1),
-      );
+      const firstSelection = new Selection(first, new Position(first.line, first.character + 1));
       changes.push({ char: nextChar.begin, selection: firstSelection });
 
       const second = new Position(sel.start.line, charInfo.end);
@@ -165,8 +164,8 @@ function findChar(
   txt: string,
   sel: Selection,
 ): { start: number; end: number; foundQuotes: Quotes } | null {
-  let start: number = -1;
-  let end: number = -1;
+  let start = -1;
+  let end = -1;
 
   let foundQuotes: Quotes | null | undefined = null;
 
@@ -174,7 +173,7 @@ function findChar(
   for (let i = sel.end.character; i < txt.length; i++) {
     const c = txt[i];
     const beforeC = i > 0 ? txt[i - 1] : null; // the previous character (to see if it is '\')
-    if (beforeC !== "\\") {
+    if (beforeC !== '\\') {
       foundQuotes = chars.find((quotes) => quotes.end === c);
       if (foundQuotes) {
         end = i;
@@ -187,7 +186,7 @@ function findChar(
   for (let i = sel.start.character - 1; i > -1; i--) {
     const c = txt[i];
     const beforeC = i > 0 ? txt[i - 1] : null; // the previous character (to see if it is '\')
-    if (beforeC !== "\\") {
+    if (beforeC !== '\\') {
       if (foundQuotes?.begin === c) {
         start = i;
         break;
@@ -206,11 +205,7 @@ function findChar(
   return null;
 }
 
-export type ToggleQuotesConfigurationChars = (
-  | string
-  | [string, string]
-  | Quotes
-)[];
+export type ToggleQuotesConfigurationChars = (string | [string, string] | Quotes)[];
 
 export interface ToggleQuotesConfiguration {
   chars: ToggleQuotesConfigurationChars;
@@ -220,17 +215,17 @@ export interface ToggleQuotesConfiguration {
 function getChars(editor: TextEditor): Quotes[] {
   const maybeChars = workspace
     .getConfiguration(configurationId, editor.document)
-    .get<ToggleQuotesConfiguration>("togglequotes")?.chars;
+    .get<ToggleQuotesConfiguration>('togglequotes')?.chars;
   // .get<ToggleQuotesConfiguration>("togglequotes").get("chars");
   const chars = Array.isArray(maybeChars) ? maybeChars : [];
 
   // Transform properties to begin/end pair
   chars.forEach((char: any, i: number, chars: any[]) => {
-    if (typeof char === "string") {
+    if (typeof char === 'string') {
       chars[i] = { begin: char, end: char };
-    } else if (typeof char === "object") {
+    } else if (typeof char === 'object') {
       if (Array.isArray(char)) {
-        if (char.length !== 2 || !char.every((c) => typeof c === "string")) {
+        if (char.length !== 2 || !char.every((c) => typeof c === 'string')) {
           throw Error(
             'Wrong typescriptExplicitTypes.togglequotes.chars array quotes pair format. Use ["<", ">"]',
           );

@@ -1,7 +1,7 @@
 import uniqWith from 'lodash.uniqwith';
 import {
   CodeAction,
-  CodeActionContext,
+  // CodeActionContext,
   CodeActionKind,
   CodeActionProvider,
   CodeActionProviderMetadata,
@@ -59,7 +59,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
   public async provideCodeActions(
     document: TextDocument,
     range: Range | Selection,
-    context: CodeActionContext,
+    // context: CodeActionContext,
   ): Promise<CodeAction[]> {
     const config = workspace.getConfiguration(configurationId);
     const isPreferrable = config.get<boolean>(ConfigurationKey.preferable);
@@ -76,12 +76,16 @@ export class GenereateTypeProvider implements CodeActionProvider {
             document.uri,
             new Position(lineNumber, charNumber),
           );
-          if (foundDefinitions?.length) allDefinitions.push(foundDefinitions[0]);
+          if (foundDefinitions.length) {
+            allDefinitions.push(foundDefinitions[0]);
+          }
         }
       }
     }
 
-    if (!allDefinitions.length) return [];
+    if (!allDefinitions.length) {
+      return [];
+    }
 
     const definitions = uniqWith(allDefinitions, (a, b) =>
       a.originSelectionRange.isEqual(b.originSelectionRange),
@@ -94,14 +98,18 @@ export class GenereateTypeProvider implements CodeActionProvider {
         document.uri,
         definition.originSelectionRange.start,
       );
-      if (!hoverRes) continue;
+      if (!hoverRes) {
+        continue;
+      }
 
       const tsHoverContent = hoverRes
         .reduce<string[]>((acc, val) => acc.concat(val.contents.map((x) => x.value)), [])
         .find((x) => {
           return x.includes('typescript') && !x.includes('⚠');
         });
-      if (!tsHoverContent) continue;
+      if (!tsHoverContent) {
+        continue;
+      }
 
       const word = document.getText(definition.originSelectionRange);
       const lineText = document.getText(
@@ -114,7 +122,9 @@ export class GenereateTypeProvider implements CodeActionProvider {
         const regexp = /\)\s*=>/gm;
         const matches = findMatches(regexp, lineText);
         const indexes = matches.map((x) => x.index);
-        if (!matches.length) continue;
+        if (!matches.length) {
+          continue;
+        }
 
         const passedIndex = indexes.find(
           (i) => i > definition.originSelectionRange.start.character,
@@ -125,17 +135,21 @@ export class GenereateTypeProvider implements CodeActionProvider {
         const potentialIndexIndex = passedIndex
           ? indexes.indexOf(passedIndex) - 1
           : indexes.length - 1;
-        if (potentialIndexIndex < 0) continue;
+        if (potentialIndexIndex < 0) {
+          continue;
+        }
 
         // check that our match contains the definition
         const potentialIndex = indexes[potentialIndexIndex];
-        const definitionMatch = matches![potentialIndexIndex];
+        // const definitionMatch = matches![potentialIndexIndex];
+        const definitionMatch = matches[potentialIndexIndex];
         if (
           potentialIndex >= definition.originSelectionRange.start.character ||
           potentialIndex + definitionMatch[0].length <=
             definition.originSelectionRange.start.character
-        )
+        ) {
           continue;
+        }
 
         generateTypeInfos.push({
           isFunction: true,
@@ -148,24 +162,32 @@ export class GenereateTypeProvider implements CodeActionProvider {
         continue;
       }
 
-      const symbol = symbols?.find((x) =>
+      const symbol = symbols.find((x) =>
         x.selectionRange.contains(definition.originSelectionRange),
       );
+      // const symbol = symbols?.find((x) =>
+      //   x.selectionRange.contains(definition.originSelectionRange),
+      // );
       const trailingSlice = document.getText(
         new Range(definition.originSelectionRange.end, definition.targetRange.end),
       );
-      const isFollowedByBracket = !!trailingSlice.match(/^(\s|\\[rn])*\(/);
+      const isFollowedByBracket = !!/^(\s|\\[rn])*\(/.exec(trailingSlice);
+      // const isFollowedByBracket = !!trailingSlice.match(/^(\s|\\[rn])*\(/);
       if (symbol?.kind === SymbolKind.Function || word === 'function' || isFollowedByBracket) {
         // find out suitable type position by looking for a closing bracket of the function
         const offset = document.offsetAt(definition.originSelectionRange.end);
         const firstBracket = trailingSlice.indexOf('(');
         const closingBracketIndex = findClosingBracketMatchIndex(trailingSlice, firstBracket);
 
-        const isFunctionTyped = trailingSlice.slice(closingBracketIndex + 1).match(/^\s*:/);
-        if (isFunctionTyped) continue;
+        const isFunctionTyped = /^\s*:/.exec(trailingSlice.slice(closingBracketIndex + 1));
+        // const isFunctionTyped = trailingSlice.slice(closingBracketIndex + 1).match(/^\s*:/);
+        if (isFunctionTyped) {
+          continue;
+        }
 
         const definitionSlice = document.getText(definition.targetRange);
-        const firstSymbol = definitionSlice.match(/^\w+/);
+        const firstSymbol = /^\w+/.exec(definitionSlice);
+        // const firstSymbol = definitionSlice.match(/^\w+/);
 
         generateTypeInfos.push({
           typescriptHoverResult: tsHoverContent,
@@ -180,7 +202,9 @@ export class GenereateTypeProvider implements CodeActionProvider {
         );
         const slice = lineText.slice(typePosition.character);
         const match = slice.match(/^\s*:/g);
-        if (match?.length) continue;
+        if (match?.length) {
+          continue;
+        }
 
         generateTypeInfos.push({
           typescriptHoverResult: tsHoverContent,
@@ -189,7 +213,9 @@ export class GenereateTypeProvider implements CodeActionProvider {
       }
     }
 
-    if (!generateTypeInfos.length) return [];
+    if (!generateTypeInfos.length) {
+      return [];
+    }
 
     const action = new CodeAction('Generate explicit type', CodeActionKind.QuickFix);
     const args: Parameters<typeof commandHandler> = [generateTypeInfos];
