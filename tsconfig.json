@@ -7,7 +7,7 @@
     "outDir": "out",
     "declaration": true,
     "sourceMap": true,
-    "rootDir": "src",
+    "baseUrl": "./",
     "resolveJsonModule": true,
     "strict": true,
     "allowSyntheticDefaultImports": true,
@@ -18,5 +18,5 @@
     "strictNullChecks": true,
     "noImplicitOverride": true,
   },
-  "exclude": ["node_modules", ".vscode-test"]
+  "exclude": ["node_modules/", ".vscode-test", "eslint.config.mjs"]
 }

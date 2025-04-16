@@ -1,4 +1,4 @@
-import uniqWith from "lodash.uniqwith";
+import uniqWith from 'lodash.uniqwith';
 import {
   CodeAction,
   CodeActionContext,
@@ -15,11 +15,11 @@ import {
   TextDocument,
   Uri,
   workspace,
-} from "vscode";
-import { commandHandler, GenerateTypeInfo } from "./command";
-import { configurationId, ConfigurationKey } from "./configuration";
-import { findClosingBracketMatchIndex } from "./helpers/findClosingBracketMatchIndex";
-import { findMatches } from "./helpers/findMatches";
+} from 'vscode';
+import { commandHandler, GenerateTypeInfo } from './command';
+import { configurationId, ConfigurationKey } from './configuration';
+import { findClosingBracketMatchIndex } from './helpers/findClosingBracketMatchIndex';
+import { findMatches } from './helpers/findMatches';
 
 interface Hover {
   range: Range;
@@ -34,35 +34,23 @@ interface Location {
 }
 
 function executeHoverProvider(uri: Uri, position: Position) {
-  return commands.executeCommand<Hover[]>(
-    "vscode.executeHoverProvider",
-    uri,
-    position,
-  );
+  return commands.executeCommand<Hover[]>('vscode.executeHoverProvider', uri, position);
 }
 
 function executeDefinitionProvider(uri: Uri, position: Position) {
-  return commands.executeCommand<Location[]>(
-    "vscode.executeDefinitionProvider",
-    uri,
-    position,
-  );
+  return commands.executeCommand<Location[]>('vscode.executeDefinitionProvider', uri, position);
 }
 
 function executeSymbolProvider(uri: Uri) {
-  return commands.executeCommand<DocumentSymbol[]>(
-    "vscode.executeDocumentSymbolProvider",
-    uri,
-  );
+  return commands.executeCommand<DocumentSymbol[]>('vscode.executeDocumentSymbolProvider', uri);
 }
 
 // some definitions are followed by brackets, but the type hover shows them as properties
 // since type extraction depends on whether the definition is a function or not, there are some exceptions
-const functionHandlerExceptions = ["get"];
+const functionHandlerExceptions = ['get'];
 
 export class GenereateTypeProvider implements CodeActionProvider {
-  public static readonly fixAllCodeActionKind =
-    CodeActionKind.SourceFixAll.append("tslint");
+  public static readonly fixAllCodeActionKind = CodeActionKind.SourceFixAll.append('tslint');
 
   public static metadata: CodeActionProviderMetadata = {
     providedCodeActionKinds: [CodeActionKind.QuickFix],
@@ -77,30 +65,18 @@ export class GenereateTypeProvider implements CodeActionProvider {
     const isPreferrable = config.get<boolean>(ConfigurationKey.preferable);
 
     const allDefinitions: Location[] = [];
-    for (
-      let lineNumber = range.start.line;
-      lineNumber <= range.end.line;
-      lineNumber++
-    ) {
+    for (let lineNumber = range.start.line; lineNumber <= range.end.line; lineNumber++) {
       if (lineNumber < document.lineCount) {
         const line = document.lineAt(lineNumber);
-        const startCharNumber =
-          lineNumber === range.start.line ? range.start.character : 0;
+        const startCharNumber = lineNumber === range.start.line ? range.start.character : 0;
         const endCharNumber =
-          lineNumber === range.end.line
-            ? range.end.character
-            : line.range.end.character;
-        for (
-          let charNumber = startCharNumber;
-          charNumber <= endCharNumber;
-          charNumber++
-        ) {
+          lineNumber === range.end.line ? range.end.character : line.range.end.character;
+        for (let charNumber = startCharNumber; charNumber <= endCharNumber; charNumber++) {
           const foundDefinitions = await executeDefinitionProvider(
             document.uri,
             new Position(lineNumber, charNumber),
           );
-          if (foundDefinitions?.length)
-            allDefinitions.push(foundDefinitions[0]);
+          if (foundDefinitions?.length) allDefinitions.push(foundDefinitions[0]);
         }
       }
     }
@@ -121,12 +97,9 @@ export class GenereateTypeProvider implements CodeActionProvider {
       if (!hoverRes) continue;
 
       const tsHoverContent = hoverRes
-        .reduce<string[]>(
-          (acc, val) => acc.concat(val.contents.map((x) => x.value)),
-          [],
-        )
+        .reduce<string[]>((acc, val) => acc.concat(val.contents.map((x) => x.value)), [])
         .find((x) => {
-          return x.includes("typescript") && !x.includes("⚠");
+          return x.includes('typescript') && !x.includes('⚠');
         });
       if (!tsHoverContent) continue;
 
@@ -136,7 +109,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
       );
 
       // => is recognized as a definition, but it's type is usually defined before, unlike all other types
-      if (word === "=>") {
+      if (word === '=>') {
         // check that there are arrow functions without type on this line
         const regexp = /\)\s*=>/gm;
         const matches = findMatches(regexp, lineText);
@@ -179,28 +152,16 @@ export class GenereateTypeProvider implements CodeActionProvider {
         x.selectionRange.contains(definition.originSelectionRange),
       );
       const trailingSlice = document.getText(
-        new Range(
-          definition.originSelectionRange.end,
-          definition.targetRange.end,
-        ),
+        new Range(definition.originSelectionRange.end, definition.targetRange.end),
       );
       const isFollowedByBracket = !!trailingSlice.match(/^(\s|\\[rn])*\(/);
-      if (
-        symbol?.kind === SymbolKind.Function ||
-        word === "function" ||
-        isFollowedByBracket
-      ) {
+      if (symbol?.kind === SymbolKind.Function || word === 'function' || isFollowedByBracket) {
         // find out suitable type position by looking for a closing bracket of the function
         const offset = document.offsetAt(definition.originSelectionRange.end);
-        const firstBracket = trailingSlice.indexOf("(");
-        const closingBracketIndex = findClosingBracketMatchIndex(
-          trailingSlice,
-          firstBracket,
-        );
+        const firstBracket = trailingSlice.indexOf('(');
+        const closingBracketIndex = findClosingBracketMatchIndex(trailingSlice, firstBracket);
 
-        const isFunctionTyped = trailingSlice
-          .slice(closingBracketIndex + 1)
-          .match(/^\s*:/);
+        const isFunctionTyped = trailingSlice.slice(closingBracketIndex + 1).match(/^\s*:/);
         if (isFunctionTyped) continue;
 
         const definitionSlice = document.getText(definition.targetRange);
@@ -209,8 +170,7 @@ export class GenereateTypeProvider implements CodeActionProvider {
         generateTypeInfos.push({
           typescriptHoverResult: tsHoverContent,
           typePosition: document.positionAt(offset + closingBracketIndex + 1),
-          isFunction:
-            !firstSymbol || !functionHandlerExceptions.includes(firstSymbol[0]),
+          isFunction: !firstSymbol || !functionHandlerExceptions.includes(firstSymbol[0]),
         });
       } else {
         // check if type annotation is already present
@@ -231,14 +191,11 @@ export class GenereateTypeProvider implements CodeActionProvider {
 
     if (!generateTypeInfos.length) return [];
 
-    const action = new CodeAction(
-      "Generate explicit type",
-      CodeActionKind.QuickFix,
-    );
+    const action = new CodeAction('Generate explicit type', CodeActionKind.QuickFix);
     const args: Parameters<typeof commandHandler> = [generateTypeInfos];
     action.command = {
-      command: "extension.generateExplicitType",
-      title: "Generate explicit type",
+      command: 'extension.generateExplicitType',
+      title: 'Generate explicit type',
       arguments: args,
     };
     action.isPreferred = isPreferrable;
