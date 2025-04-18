@@ -2,7 +2,7 @@
 import { OverviewRulerLane, window, Range } from 'vscode';
 import type { TextEditor } from 'vscode';
 // import type { API as GitAPI, Repository } from './types/git';
-import { outputChannel } from './extension';
+// import { outputChannel } from './extension';
 import * as cp from 'child_process';
 import * as path from 'path';
 // import { Writable } from 'stream'; // For typing stderr stream
@@ -40,7 +40,7 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
   return new Promise((resolve, reject) => {
     const command = RUST_BINARY_NAME; // Use RUST_BINARY_PATH if using an absolute path
     // const args = ['--file', filePath]; // Adjust arguments based on your binary's needs
-    const args = ['diff']; // Adjust arguments based on your binary's needs
+    const args = ['difftool']; // Adjust arguments based on your binary's needs
 
     let stdoutData = '';
     let stderrData = '';
