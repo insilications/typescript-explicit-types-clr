@@ -1,16 +1,16 @@
 // @ts-check
 
-import eslint from "@eslint/js";
-import tseslint from "typescript-eslint";
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
     ignores: [
-      "node_modules/",
-      "out/",
-      "webpack.config.js",
-      "eslint.config.mjs",
-      "src/types/git.d.ts",
+      'node_modules/',
+      'out/',
+      'webpack.config.js',
+      'eslint.config.mjs',
+      'src/types/git.d.ts',
     ],
   },
   eslint.configs.recommended,
@@ -24,13 +24,14 @@ export default tseslint.config(
       },
     },
     rules: {
-      "@typescript-eslint/no-non-null-assertion": "off",
-      "curly": ["error", "all"],  // Enforces braces for all control statements
-      "@typescript-eslint/no-unnecessary-condition": "warn",
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": "warn",
-      "@typescript-eslint/prefer-optional-chain": "warn",
-      "@typescript-eslint/prefer-regexp-exec": "warn",
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      curly: ['error', 'all'], // Enforces braces for all control statements
+      '@typescript-eslint/no-unnecessary-condition': 'warn',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/prefer-optional-chain': 'warn',
+      '@typescript-eslint/prefer-regexp-exec': 'warn',
+      '@typescript-eslint/restrict-template-expressions': 'off',
     },
   },
 );

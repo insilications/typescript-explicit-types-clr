@@ -5,16 +5,16 @@ import type { TextEditor } from 'vscode';
 import { outputChannel } from './extension';
 import * as cp from 'child_process';
 import * as path from 'path';
-import { Writable } from 'stream'; // For typing stderr stream
+// import { Writable } from 'stream'; // For typing stderr stream
 
-const RUST_BINARY_NAME = 'difft'; // Or provide an absolute path
+const RUST_BINARY_NAME = 'git'; // Or provide an absolute path
 
 let debounceTimer: NodeJS.Timeout | undefined;
 const debounceTimeMs = 300; // Adjust as needed
 
 const latestCommitHighlightDecorationType = window.createTextEditorDecorationType({
   backgroundColor: 'rgba(0, 255, 21, 0.2)',
-  isWholeLine: true,
+  // isWholeLine: true,
   overviewRulerLane: OverviewRulerLane.Left,
   overviewRulerColor: 'rgba(43, 255, 0, 1)',
 });
@@ -39,18 +39,20 @@ interface RustDiffOutput {
 async function getRangesFromBinary(filePath: string): Promise<Range[]> {
   return new Promise((resolve, reject) => {
     const command = RUST_BINARY_NAME; // Use RUST_BINARY_PATH if using an absolute path
-    const args = ['--file', filePath]; // Adjust arguments based on your binary's needs
+    // const args = ['--file', filePath]; // Adjust arguments based on your binary's needs
+    const args = ['diff']; // Adjust arguments based on your binary's needs
 
     let stdoutData = '';
     let stderrData = '';
 
     // Using spawn for better performance and stream handling
     const process = cp.spawn(command, args, {
+      // const process = cp.spawn(command, {
       // Prevent a shell window from popping up on Windows
       windowsHide: true,
       // If your binary needs a specific working directory (e.g., repo root),
       // you might need to determine it first and set the `cwd` option.
-      // cwd: path.dirname(filePath) // Example: run in file's directory
+      cwd: path.dirname(filePath), // Example: run in file's directory
     });
 
     process.stdout.on('data', (data) => {
@@ -74,7 +76,9 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
       if (code !== 0) {
         // Binary exited with an error code
         const errorMessage = stderrData || `Binary exited with code ${code}`;
-        return reject(new Error(errorMessage));
+        // return reject(new Error(errorMessage));
+        reject(new Error(errorMessage));
+        return;
       }
 
       // Process finished successfully, try parsing JSON
@@ -83,7 +87,9 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
           // Handle cases where the binary might output nothing on success
           // (e.g., file not tracked, no changes in last commit)
           console.log(`No output from ${command} for ${filePath}. Assuming no changes.`);
-          return resolve([]);
+          // return resolve([]);
+          resolve([]);
+          return;
         }
 
         const outputJson = JSON.parse(stdoutData) as RustDiffOutput;
@@ -105,9 +111,9 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
                   // End char: endCol (since VS Code end is exclusive, and our endCol is inclusive, using endCol directly works)
                   if (lineNumber > 0 && startCol > 0 && endCol >= startCol) {
                     const range = new Range(
-                      lineNumber - 1,
-                      startCol - 1,
-                      lineNumber - 1,
+                      lineNumber,
+                      startCol,
+                      lineNumber,
                       endCol, // Use endCol directly as VS Code end is exclusive
                     );
                     ranges.push(range);
@@ -165,8 +171,9 @@ export function triggerUpdateDecorations(editor: TextEditor | undefined = window
     return;
   }
 
-  debounceTimer = setTimeout(() => {
-    updateDecorations(editor);
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
+  debounceTimer = setTimeout(async () => {
+    await updateDecorations(editor);
     debounceTimer = undefined;
   }, debounceTimeMs);
 }

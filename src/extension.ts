@@ -3,7 +3,7 @@ import {
   DocumentFilter,
   ExtensionContext,
   languages,
-  extensions,
+  // extensions,
   window,
   workspace,
 } from 'vscode';
@@ -15,7 +15,7 @@ import { triggerUpdateDecorations } from './blameLineHighlight';
 
 export let outputChannel: LogOutputChannel | undefined;
 
-export async function activate(context: ExtensionContext) {
+export function activate(context: ExtensionContext) {
   const selector: DocumentFilter[] = [];
   for (const language of ['typescript', 'typescriptreact', 'svelte']) {
     selector.push({ language, scheme: 'file' });
