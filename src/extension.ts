@@ -1,9 +1,17 @@
-import { commands, DocumentFilter, ExtensionContext, languages, extensions, window } from 'vscode';
+import {
+  commands,
+  DocumentFilter,
+  ExtensionContext,
+  languages,
+  extensions,
+  window,
+  workspace,
+} from 'vscode';
 import type { LogOutputChannel } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
 import { commandHandler, commandId, toogleQuotesCommandId, toggleQuotes } from './command';
-import type { GitExtension, API as GitAPI } from './types/git';
-import { updateDecorations } from './blameLineHighlight';
+// import type { GitExtension, API as GitAPI } from './types/git';
+import { triggerUpdateDecorations } from './blameLineHighlight';
 
 export let outputChannel: LogOutputChannel | undefined;
 
@@ -29,26 +37,24 @@ export async function activate(context: ExtensionContext) {
 
   outputChannel = window.createOutputChannel('typescript-explicit-types', { log: true }); // Create a custom channel
 
-  const gitExtension = extensions.getExtension<GitExtension>('vscode.git')?.exports;
-  if (!gitExtension) {
-    window.showErrorMessage('typescript-explicit-types: vscode.git extension is not available.');
-    return;
-  }
-  const gitApi: GitAPI = gitExtension.getAPI(1);
-
-  // Example: Register listeners
+  // --- Event Listeners ---
   context.subscriptions.push(
-    window.onDidChangeActiveTextEditor(async (editor) => {
-      if (editor) {
-        await updateDecorations(editor, gitApi);
+    window.onDidChangeActiveTextEditor((editor) => {
+      triggerUpdateDecorations(editor);
+    }),
+  );
+
+  context.subscriptions.push(
+    workspace.onDidChangeTextDocument((event) => {
+      // Trigger update if the changed document is the active one
+      if (window.activeTextEditor && event.document === window.activeTextEditor.document) {
+        triggerUpdateDecorations(window.activeTextEditor);
       }
     }),
   );
 
   // Initial update for the currently active editor
-  if (window.activeTextEditor) {
-    await updateDecorations(window.activeTextEditor, gitApi);
-  }
+  triggerUpdateDecorations();
 
   // Optional: Listen for Git state changes to update decorations
   // gitApi.onDidOpenRepository(repo => { /* ... */ });
