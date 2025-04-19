@@ -13,6 +13,7 @@ import type {
   TextEditorDecorationType,
   Uri,
   Disposable,
+  TextEditor,
   // Extension,
 } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
@@ -78,7 +79,11 @@ function enableGitExtensionFunctionality(context: ExtensionContext) {
 
         const currentHead = repository.state.HEAD?.name;
         outputChannel!.info(`Current HEAD: ${currentHead ?? 'detached'}`);
-        // -----------------------
+
+        // use .map()
+        const visibleEditorsWithFiles: TextEditor[] = window.visibleTextEditors.filter(
+          (editor: TextEditor) => editor.document.uri.scheme === 'file',
+        );
       });
 
       // Store the disposable listener
