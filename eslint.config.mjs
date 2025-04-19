@@ -32,6 +32,8 @@ export default tseslint.config(
       '@typescript-eslint/prefer-optional-chain': 'warn',
       '@typescript-eslint/prefer-regexp-exec': 'warn',
       '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unsafe-member-access': 'warn',
     },
   },
 );

@@ -2,9 +2,9 @@
 import { OverviewRulerLane, window, Range } from 'vscode';
 import type { TextEditor } from 'vscode';
 // import type { API as GitAPI, Repository } from './types/git';
-// import { outputChannel } from './extension';
-import * as cp from 'child_process';
-import * as path from 'path';
+import { outputChannel } from './extension';
+import { spawn } from 'child_process';
+import { dirname } from 'path';
 // import { Writable } from 'stream'; // For typing stderr stream
 
 const RUST_BINARY_NAME = 'git'; // Or provide an absolute path
@@ -40,19 +40,21 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
   return new Promise((resolve, reject) => {
     const command = RUST_BINARY_NAME; // Use RUST_BINARY_PATH if using an absolute path
     // const args = ['--file', filePath]; // Adjust arguments based on your binary's needs
-    const args = ['difftool']; // Adjust arguments based on your binary's needs
+    // const args = ['difftool', 'HEAD~1', '--']; // Adjust arguments based on your binary's needs
+    // const args = ['difftool', 'HEAD~1']; // Adjust arguments based on your binary's needs
+    const args = ['difftool', 'HEAD~1', '--', filePath]; // Adjust arguments based on your binary's needs
 
     let stdoutData = '';
     let stderrData = '';
 
     // Using spawn for better performance and stream handling
-    const process = cp.spawn(command, args, {
+    const process = spawn(command, args, {
       // const process = cp.spawn(command, {
       // Prevent a shell window from popping up on Windows
       windowsHide: true,
       // If your binary needs a specific working directory (e.g., repo root),
       // you might need to determine it first and set the `cwd` option.
-      cwd: path.dirname(filePath), // Example: run in file's directory
+      cwd: dirname(filePath), // Example: run in file's directory
     });
 
     process.stdout.on('data', (data) => {
@@ -140,6 +142,7 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
 export async function updateDecorations(editor: TextEditor) {
   const docUri = editor.document.uri;
   const filePath = docUri.fsPath;
+  outputChannel!.appendLine(`0 - updateDecorations - filePath: ${filePath}`);
 
   // Clear existing decorations before starting
   editor.setDecorations(latestCommitHighlightDecorationType, []);

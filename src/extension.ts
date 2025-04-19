@@ -44,17 +44,17 @@ export function activate(context: ExtensionContext) {
     }),
   );
 
-  context.subscriptions.push(
-    workspace.onDidChangeTextDocument((event) => {
-      // Trigger update if the changed document is the active one
-      if (window.activeTextEditor && event.document === window.activeTextEditor.document) {
-        triggerUpdateDecorations(window.activeTextEditor);
-      }
-    }),
-  );
+  // context.subscriptions.push(
+  //   workspace.onDidChangeTextDocument((event) => {
+  //     // Trigger update if the changed document is the active one
+  //     if (window.activeTextEditor && event.document === window.activeTextEditor.document) {
+  //       triggerUpdateDecorations(window.activeTextEditor);
+  //     }
+  //   }),
+  // );
 
   // Initial update for the currently active editor
-  triggerUpdateDecorations();
+  // triggerUpdateDecorations();
 
   // Optional: Listen for Git state changes to update decorations
   // gitApi.onDidOpenRepository(repo => { /* ... */ });
