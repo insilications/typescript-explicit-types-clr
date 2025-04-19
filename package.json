@@ -43,6 +43,18 @@
     "configuration": {
       "title": "TypeScript Explicit Types",
       "properties": {
+        "typescriptExplicitTypes.logLevel": {
+          "type": "string",
+          "enum": [
+            "Debug",
+            "Info",
+            "Warning",
+            "Error",
+            "None"
+          ],
+          "default": "Info",
+          "description": "Controls the verbosity of logging"
+        },
         "typescriptExplicitTypes.preferable": {
           "type": "boolean",
           "default": true,

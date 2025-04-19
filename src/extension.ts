@@ -3,16 +3,18 @@ import {
   DocumentFilter,
   ExtensionContext,
   languages,
-  // extensions,
+  workspace,
   window,
-  // workspace,
   OverviewRulerLane,
 } from 'vscode';
 import type { LogOutputChannel, TextEditorDecorationType } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
 import { commandHandler, commandId, toogleQuotesCommandId, toggleQuotes } from './command';
 // import type { GitExtension, API as GitAPI } from './types/git';
-import { triggerUpdateDecorationsNow } from './blameLineHighlight';
+import {
+  triggerUpdateDecorationsNow,
+  triggerUpdateDecorationsDebounce,
+} from './blameLineHighlight';
 
 export let outputChannel: LogOutputChannel | undefined;
 
@@ -31,6 +33,9 @@ export const textEditorHighlightStyles: { latestHighlight: TextEditorDecorationT
 };
 
 export function activate(context: ExtensionContext) {
+  // Create a custom channel for logging
+  outputChannel = window.createOutputChannel('typescriptExplicitTypes', { log: true });
+
   const selector: DocumentFilter[] = [];
   for (const language of ['typescript', 'typescriptreact', 'svelte']) {
     selector.push({ language, scheme: 'file' });
@@ -51,9 +56,6 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(toggleQuotesCommand);
   context.subscriptions.push(textEditorHighlightStyles.latestHighlight);
 
-  outputChannel = window.createOutputChannel('typescript-explicit-types', { log: true }); // Create a custom channel
-
-  // --- Event Listeners ---
   context.subscriptions.push(
     window.onDidChangeActiveTextEditor(async (editor) => {
       if (editor) {
@@ -62,34 +64,35 @@ export function activate(context: ExtensionContext) {
     }),
   );
 
-  // context.subscriptions.push(
-  //   workspace.onDidChangeTextDocument((event) => {
-  //     // Trigger update if the changed document is the active one
-  //     if (window.activeTextEditor && event.document === window.activeTextEditor.document) {
-  //       triggerUpdateDecorations(window.activeTextEditor);
-  //     }
-  //   }),
-  // );
+  context.subscriptions.push(
+    workspace.onDidChangeTextDocument((event) => {
+      const eventDocumentUri = event.document.uri;
+      if (eventDocumentUri.scheme === 'file') {
+        const editorsWithDocument = window.visibleTextEditors.filter(
+          (editor) => editor.document.uri.toString() === eventDocumentUri.toString(),
+        );
 
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  setTimeout(async () => {
-    outputChannel!.appendLine('0 - triggerUpdateDecorations(visibleEditor)');
+        if (editorsWithDocument.length > 0) {
+          outputChannel!.debug(
+            `0 - onDidChangeTextDocument - editorsWithDocument[0].document.fileName: ${editorsWithDocument[0].document.fileName}`,
+          );
+          // Only use the first editor for this document
+          triggerUpdateDecorationsDebounce(editorsWithDocument[0]);
+        }
+      }
+    }),
+  );
+
+  setTimeout(() => {
     for (const visibleEditor of window.visibleTextEditors) {
-      outputChannel!.appendLine(
-        `1 - triggerUpdateDecorations(visibleEditor) - visibleEditor: ${visibleEditor.document.fileName}`,
-      );
-      await triggerUpdateDecorationsNow(visibleEditor);
+      if (visibleEditor.document.uri.scheme === 'file') {
+        outputChannel!.debug(
+          `0 - triggerUpdateDecorations(visibleEditor) - visibleEditor: ${visibleEditor.document.fileName}`,
+        );
+        void triggerUpdateDecorationsNow(visibleEditor);
+      }
     }
   }, 6000);
-  // const activeEditor = window.activeTextEditor;
-
-  // if (activeEditor) {
-  // triggerUpdateDecorations(activeEditor); // Initial update for the active editor
-  // }
-
-  // Optional: Listen for Git state changes to update decorations
-  // gitApi.onDidOpenRepository(repo => { /* ... */ });
-  // repo.state.onDidChange(() => { /* ... update for relevant editor ... */ });
 
   outputChannel.appendLine('Extension activated.'); // Initial activation log
 }
