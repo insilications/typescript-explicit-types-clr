@@ -6,11 +6,18 @@ import {
   workspace,
   window,
   OverviewRulerLane,
+  extensions,
 } from 'vscode';
-import type { LogOutputChannel, TextEditorDecorationType } from 'vscode';
+import type {
+  LogOutputChannel,
+  TextEditorDecorationType,
+  Uri,
+  Disposable,
+  // Extension,
+} from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
 import { commandHandler, commandId, toogleQuotesCommandId, toggleQuotes } from './command';
-// import type { GitExtension, API as GitAPI } from './types/git';
+import type { GitExtension, API as GitAPI, Repository } from './types/git';
 import {
   triggerUpdateDecorationsNow,
   triggerUpdateDecorationsDebounce,
@@ -31,6 +38,82 @@ export const textEditorHighlightStyles: { latestHighlight: TextEditorDecorationT
     // borderColor: 'rgb(255, 0, 0)',
   }),
 };
+
+const repositoryStateListeners = new Map<Uri, Disposable>();
+
+function enableGitExtensionFunctionality(context: ExtensionContext) {
+  try {
+    const gitExtension: GitExtension | undefined =
+      extensions.getExtension<GitExtension>('vscode.git')?.exports;
+
+    if (!gitExtension) {
+      outputChannel!.warn('Git extension "vscode.git" not found.');
+      return;
+    }
+    if (!gitExtension.enabled) {
+      outputChannel!.warn('Git extension is not enabled. Waiting for enablement...');
+      return;
+    }
+
+    const gitApi: GitAPI = gitExtension.getAPI(1);
+    outputChannel!.info(
+      `Git API version 1 obtained. Found ${gitApi.repositories.length} initial repositories.`,
+    );
+
+    // Function to subscribe to a repository's state changes
+    const subscribeToRepositoryState = (repository: Repository) => {
+      const repoUri = repository.rootUri;
+      outputChannel!.info(`Subscribing to state changes for repository: ${repoUri.fsPath}`);
+
+      // Check if already subscribed (should not happen with proper cleanup, but good practice)
+      if (repositoryStateListeners.has(repoUri)) {
+        outputChannel!.warn(
+          `Already subscribed to repository: ${repoUri.fsPath}. Disposing old listener.`,
+        );
+        repositoryStateListeners.get(repoUri)?.dispose();
+      }
+
+      const stateChangeListener = repository.state.onDidChange(() => {
+        outputChannel!.info(`Repository state changed for: ${repoUri.fsPath}`);
+
+        const currentHead = repository.state.HEAD?.name;
+        outputChannel!.info(`Current HEAD: ${currentHead ?? 'detached'}`);
+        // -----------------------
+      });
+
+      // Store the disposable listener
+      repositoryStateListeners.set(repoUri, stateChangeListener);
+      // Also add to context.subscriptions for automatic cleanup on extension deactivation
+      context.subscriptions.push(stateChangeListener);
+    };
+
+    // Function to unsubscribe from a repository's state changes
+    const unsubscribeFromRepositoryState = (repository: Repository) => {
+      const repoUri = repository.rootUri;
+      const listener = repositoryStateListeners.get(repoUri);
+      if (listener) {
+        outputChannel!.info(`Unsubscribing from state changes for repository: ${repoUri.fsPath}`);
+        listener.dispose();
+        repositoryStateListeners.delete(repoUri);
+      }
+    };
+
+    // 1. Subscribe to initially open repositories
+    gitApi.repositories.forEach(subscribeToRepositoryState);
+
+    // 2. Subscribe to repositories opened *after* activation
+    const openRepoListener = gitApi.onDidOpenRepository(subscribeToRepositoryState);
+    context.subscriptions.push(openRepoListener); // Add listener disposable to context
+
+    // 3. Unsubscribe when repositories are closed
+    const closeRepoListener = gitApi.onDidCloseRepository(unsubscribeFromRepositoryState);
+    context.subscriptions.push(closeRepoListener); // Add listener disposable to context
+
+    outputChannel!.info('Successfully subscribed to Git repository state changes.');
+  } catch (error) {
+    outputChannel!.error('Error activating extension or interacting with Git API:', error);
+  }
+}
 
 export function activate(context: ExtensionContext) {
   // Create a custom channel for logging
@@ -92,12 +175,19 @@ export function activate(context: ExtensionContext) {
         void triggerUpdateDecorationsNow(visibleEditor);
       }
     }
-  }, 6000);
+  }, 4000);
+
+  setTimeout(() => {
+    enableGitExtensionFunctionality(context);
+  }, 4000);
 
   outputChannel.appendLine('Extension activated.'); // Initial activation log
 }
 
 export function deactivate() {
+  repositoryStateListeners.forEach((disposable: Disposable): any => disposable.dispose());
+  repositoryStateListeners.clear();
+
   if (outputChannel) {
     outputChannel.appendLine('Extension deactivated.'); // Clean up logs
     outputChannel.dispose(); // Dispose to free resources
