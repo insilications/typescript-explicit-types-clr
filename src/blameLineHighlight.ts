@@ -155,24 +155,26 @@ export async function updateDecorations(editor: TextEditor) {
 }
 
 // export function triggerUpdateDecorations(editor: TextEditor | undefined = window.activeTextEditor) {
-export function triggerUpdateDecorations(editor: TextEditor) {
+export async function triggerUpdateDecorations(editor: TextEditor) {
   if (debounceTimer) {
     clearTimeout(debounceTimer);
   }
-  if (!editor) {
-    return;
-  }
+  // if (!editor) {
+  //   return;
+  // }
   // Only run if the document is file-based and not untitled etc.
   if (editor.document.uri.scheme !== 'file') {
     editor.setDecorations(textEditorHighlightStyles.latestHighlight, []); // Clear if not a file
     return;
   }
 
+  await updateDecorations(editor);
+
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  debounceTimer = setTimeout(async () => {
-    await updateDecorations(editor);
-    debounceTimer = undefined;
-  }, debounceTimeMs);
+  // debounceTimer = setTimeout(async () => {
+  //   await updateDecorations(editor);
+  //   debounceTimer = undefined;
+  // }, debounceTimeMs);
 }
 
 // export async function updateDecorations(editor: TextEditor, gitApi: GitAPI) {
