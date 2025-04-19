@@ -12,7 +12,7 @@ import type { LogOutputChannel, TextEditorDecorationType } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
 import { commandHandler, commandId, toogleQuotesCommandId, toggleQuotes } from './command';
 // import type { GitExtension, API as GitAPI } from './types/git';
-import { triggerUpdateDecorations } from './blameLineHighlight';
+import { triggerUpdateDecorationsNow } from './blameLineHighlight';
 
 export let outputChannel: LogOutputChannel | undefined;
 
@@ -57,7 +57,7 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(
     window.onDidChangeActiveTextEditor(async (editor) => {
       if (editor) {
-        await triggerUpdateDecorations(editor);
+        await triggerUpdateDecorationsNow(editor);
       }
     }),
   );
@@ -71,11 +71,6 @@ export function activate(context: ExtensionContext) {
   //   }),
   // );
 
-  for (const visibleEditor of window.visibleTextEditors) {
-    outputChannel.appendLine(`visibleEditor: ${visibleEditor.document.fileName}`);
-    //   triggerUpdateDecorations(visibleEditor);
-  }
-
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   setTimeout(async () => {
     outputChannel!.appendLine('0 - triggerUpdateDecorations(visibleEditor)');
@@ -83,7 +78,7 @@ export function activate(context: ExtensionContext) {
       outputChannel!.appendLine(
         `1 - triggerUpdateDecorations(visibleEditor) - visibleEditor: ${visibleEditor.document.fileName}`,
       );
-      await triggerUpdateDecorations(visibleEditor);
+      await triggerUpdateDecorationsNow(visibleEditor);
     }
   }, 6000);
   // const activeEditor = window.activeTextEditor;
