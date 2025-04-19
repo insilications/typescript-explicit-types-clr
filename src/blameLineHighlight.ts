@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/array-type */
-import { OverviewRulerLane, window, Range } from 'vscode';
+import { window, Range } from 'vscode';
 import type { TextEditor } from 'vscode';
 // import type { API as GitAPI, Repository } from './types/git';
-import { outputChannel } from './extension';
+import { outputChannel, textEditorHighlightStyles } from './extension';
 import { spawn } from 'child_process';
 import { dirname } from 'path';
 // import { Writable } from 'stream'; // For typing stderr stream
@@ -11,13 +11,6 @@ const RUST_BINARY_NAME = 'git'; // Or provide an absolute path
 
 let debounceTimer: NodeJS.Timeout | undefined;
 const debounceTimeMs = 300; // Adjust as needed
-
-const latestCommitHighlightDecorationType = window.createTextEditorDecorationType({
-  backgroundColor: 'rgba(0, 255, 21, 0.2)',
-  // isWholeLine: true,
-  overviewRulerLane: OverviewRulerLane.Left,
-  overviewRulerColor: 'rgba(43, 255, 0, 1)',
-});
 
 // --- Interface for the expected JSON structure ---
 interface RustDiffOutput {
@@ -145,19 +138,19 @@ export async function updateDecorations(editor: TextEditor) {
   outputChannel!.appendLine(`0 - updateDecorations - filePath: ${filePath}`);
 
   // Clear existing decorations before starting
-  editor.setDecorations(latestCommitHighlightDecorationType, []);
+  editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
 
   try {
     const ranges = await getRangesFromBinary(filePath);
     if (ranges.length > 0) {
-      editor.setDecorations(latestCommitHighlightDecorationType, ranges);
+      editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
     }
   } catch (error: any) {
     console.error(`Error running ${RUST_BINARY_NAME} for ${filePath}:`, error);
     // Optionally show a subtle error to the user, but avoid being noisy
     // vscode.window.showWarningMessage(`Highlighting failed: ${error.message}`);
     // Ensure decorations are cleared on error
-    editor.setDecorations(latestCommitHighlightDecorationType, []);
+    editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
   }
 }
 
@@ -170,7 +163,7 @@ export function triggerUpdateDecorations(editor: TextEditor | undefined = window
   }
   // Only run if the document is file-based and not untitled etc.
   if (editor.document.uri.scheme !== 'file') {
-    editor.setDecorations(latestCommitHighlightDecorationType, []); // Clear if not a file
+    editor.setDecorations(textEditorHighlightStyles.latestHighlight, []); // Clear if not a file
     return;
   }
 

@@ -7,13 +7,23 @@ import {
   window,
   workspace,
 } from 'vscode';
-import type { LogOutputChannel } from 'vscode';
+import type { LogOutputChannel, TextEditorDecorationType } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
 import { commandHandler, commandId, toogleQuotesCommandId, toggleQuotes } from './command';
 // import type { GitExtension, API as GitAPI } from './types/git';
+import { OverviewRulerLane, window, Range } from 'vscode';
 import { triggerUpdateDecorations } from './blameLineHighlight';
 
 export let outputChannel: LogOutputChannel | undefined;
+
+export const textEditorHighlightStyles: { latestHighlight: TextEditorDecorationType } = {
+  latestHighlight: window.createTextEditorDecorationType({
+    backgroundColor: 'rgba(0, 255, 21, 0.2)',
+    // isWholeLine: true,
+    overviewRulerLane: OverviewRulerLane.Left,
+    overviewRulerColor: 'rgba(43, 255, 0, 1)',
+  }),
+};
 
 export function activate(context: ExtensionContext) {
   const selector: DocumentFilter[] = [];
