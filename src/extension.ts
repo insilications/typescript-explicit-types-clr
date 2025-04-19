@@ -5,23 +5,28 @@ import {
   languages,
   // extensions,
   window,
-  workspace,
+  // workspace,
+  OverviewRulerLane,
 } from 'vscode';
 import type { LogOutputChannel, TextEditorDecorationType } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
 import { commandHandler, commandId, toogleQuotesCommandId, toggleQuotes } from './command';
 // import type { GitExtension, API as GitAPI } from './types/git';
-import { OverviewRulerLane, window, Range } from 'vscode';
 import { triggerUpdateDecorations } from './blameLineHighlight';
 
 export let outputChannel: LogOutputChannel | undefined;
 
 export const textEditorHighlightStyles: { latestHighlight: TextEditorDecorationType } = {
   latestHighlight: window.createTextEditorDecorationType({
-    backgroundColor: 'rgba(0, 255, 21, 0.2)',
+    // backgroundColor: 'rgba(0, 255, 21, 0.2)',
     // isWholeLine: true,
     overviewRulerLane: OverviewRulerLane.Left,
     overviewRulerColor: 'rgba(43, 255, 0, 1)',
+    borderWidth: '1px 1px 1px 1px',
+    borderStyle: 'solid',
+    borderSpacing: '6px',
+    borderRadius: '6px',
+    borderColor: 'rgb(255, 0, 0)',
   }),
 };
 
@@ -44,13 +49,16 @@ export function activate(context: ExtensionContext) {
   context.subscriptions.push(command);
   context.subscriptions.push(codeActionProvider);
   context.subscriptions.push(toggleQuotesCommand);
+  context.subscriptions.push(textEditorHighlightStyles.latestHighlight);
 
   outputChannel = window.createOutputChannel('typescript-explicit-types', { log: true }); // Create a custom channel
 
   // --- Event Listeners ---
   context.subscriptions.push(
     window.onDidChangeActiveTextEditor((editor) => {
-      triggerUpdateDecorations(editor);
+      if (editor) {
+        triggerUpdateDecorations(editor);
+      }
     }),
   );
 
@@ -63,8 +71,15 @@ export function activate(context: ExtensionContext) {
   //   }),
   // );
 
-  // Initial update for the currently active editor
-  // triggerUpdateDecorations();
+  for (const visibleEditor of window.visibleTextEditors) {
+    triggerUpdateDecorations(visibleEditor);
+  }
+
+  // const activeEditor = window.activeTextEditor;
+
+  // if (activeEditor) {
+  // triggerUpdateDecorations(activeEditor); // Initial update for the active editor
+  // }
 
   // Optional: Listen for Git state changes to update decorations
   // gitApi.onDidOpenRepository(repo => { /* ... */ });

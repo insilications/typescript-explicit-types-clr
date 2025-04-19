@@ -154,7 +154,8 @@ export async function updateDecorations(editor: TextEditor) {
   }
 }
 
-export function triggerUpdateDecorations(editor: TextEditor | undefined = window.activeTextEditor) {
+// export function triggerUpdateDecorations(editor: TextEditor | undefined = window.activeTextEditor) {
+export function triggerUpdateDecorations(editor: TextEditor) {
   if (debounceTimer) {
     clearTimeout(debounceTimer);
   }
