@@ -19,37 +19,33 @@ const debounceTimers = new Map<string, NodeJS.Timeout>();
 const debounceTimeMs = 3000; // Adjust as needed
 
 /**
- * Gets the subject line of a commit that touches a given file.
- * Runs: git log -1 --format=%s <commit> -- <file>
+ * Gets the subject line of a commit that touches a given filePath.
+ * Runs: git log -1 --format=%s <commit> -- <filePath>
  *
  * @param commit   SHA/branch/tag/etc.
- * @param file     Path relative to the repository root.
- * @param repoRoot Absolute path to the repository root (optional).
+ * @param filePath     Path relative to the repository root.
  */
-export async function getCommitSubject(
-  commit: string,
-  file: string,
-  repoRoot?: string,
-): Promise<string> {
-  // const cacheKey = `${commit}␟${file}`; // ␟ = unlikely in paths/SHAs
+export async function getCommitSubject(commit: string, filePath: string): Promise<string> {
+  // const cacheKey = `${commit}␟${filePath}`; // ␟ = unlikely in paths/SHAs
   // const cached = CACHE.get(cacheKey);
   // if (cached !== undefined) return cached;
 
   return new Promise<string>((resolve, reject) => {
-    const proc = spawn('git', ['log', '-1', '--format=%s', commit, '--', file], {
-      cwd: repoRoot, // undefined → inherits extension’s cwd
+    const proc = spawn(GIT_BINARY_NAME, ['log', '-1', '--format=%s', commit, '--', filePath], {
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
+      // CACHE THIS?
+      cwd: dirname(filePath),
     });
 
     let out = '';
     let err = '';
 
     proc.stdout.setEncoding('utf8');
-    proc.stdout.on('data', (chunk) => (out += chunk));
+    proc.stdout.on('data', (chunk: string) => (out += chunk));
 
     proc.stderr.setEncoding('utf8');
-    proc.stderr.on('data', (chunk) => (err += chunk));
+    proc.stderr.on('data', (chunk: string) => (err += chunk));
 
     proc.once('error', reject);
 
@@ -108,7 +104,7 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
       try {
         if (!stdoutData.trim()) {
           // Handle cases where the binary might output nothing on success
-          // (e.g., file not tracked, no changes in last commit)
+          // (e.g., filePath not tracked, no changes in last commit)
           outputChannel!.debug(
             `No output from '${GIT_BINARY_NAME}' for ${filePath}. Assuming no changes.`,
           );
@@ -169,9 +165,9 @@ export async function triggerUpdateDecorationsNow(editor: TextEditor) {
   const editorDocument = editor.document;
   const documentUri = editorDocument.uri;
 
-  // Only run if the document is file-based and not untitled etc.
-  if (documentUri.scheme !== 'file') {
-    editor.setDecorations(textEditorHighlightStyles.latestHighlight, []); // Clear if not a file
+  // Only run if the document is filePath-based and not untitled etc.
+  if (documentUri.scheme !== 'filePath') {
+    editor.setDecorations(textEditorHighlightStyles.latestHighlight, []); // Clear if not a filePath
     return;
   }
 
@@ -192,8 +188,8 @@ export function triggerUpdateDecorationsDebounce(editor: TextEditor): void {
     debounceTimers.delete(editorId);
   }
 
-  // Early exit for non-file documents
-  if (documentUri.scheme !== 'file') {
+  // Early exit for non-filePath documents
+  if (documentUri.scheme !== 'filePath') {
     editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
     return;
   }

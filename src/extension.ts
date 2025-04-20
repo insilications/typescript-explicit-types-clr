@@ -25,6 +25,7 @@ import type { GitExtension, API as GitAPI, Repository } from './types/git';
 import {
   triggerUpdateDecorationsNow,
   triggerUpdateDecorationsDebounce,
+  getCommitSubject,
 } from './blameLineHighlight';
 
 export let outputChannel: LogOutputChannel | undefined;
@@ -150,24 +151,21 @@ export function activate({ subscriptions }: ExtensionContext) {
 
   myStatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 1);
   subscriptions.push(myStatusBarItem);
-  myStatusBarItem.text = `My Test Status Bar Item`;
-  myStatusBarItem.show();
 
   subscriptions.push(
     window.onDidChangeActiveTextEditor(async (editor) => {
       if (editor) {
         await triggerUpdateDecorationsNow(editor);
 
-        // try {
-        //   const ranges = await getRangesFromBinary(filePath);
-        //   if (ranges.length > 0) {
-        //     editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
-        //   }
-        // } catch (error: unknown) {
-        //   outputChannel!.error(`Highlighting failed for ${filePath}:`, error); // Log errors
-        //   outputChannel!.show(); // Optionally show the channel on error
-        //   editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
-        // }
+        try {
+          const subject = await getCommitSubject('HEAD~1', editor.document.uri.fsPath);
+          myStatusBarItem.text = `HEAD~1: ${subject}`;
+          myStatusBarItem.show();
+        } catch (error: unknown) {
+          myStatusBarItem.hide();
+          outputChannel!.error(`getCommitSubject for ${editor.document.uri.fsPath} failed:`, error); // Log errors
+          outputChannel!.show();
+        }
       }
     }),
   );

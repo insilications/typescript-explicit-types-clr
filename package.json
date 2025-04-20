@@ -43,7 +43,7 @@
     "configuration": {
       "title": "TypeScript Explicit Types",
       "properties": {
-        "typescriptExplicitTypes.logLevel": {
+        "typescriptExplicitTypes.blameHighlightinglogLevel": {
           "type": "string",
           "enum": [
             "Debug",
@@ -54,6 +54,21 @@
           ],
           "default": "Info",
           "description": "Controls the verbosity of logging"
+        },
+        "typescriptExplicitTypes.blameHighlightingParentLevel": {
+          "type": "number",
+          "default": "1",
+          "description": "Controls how many levels up in the hierarchy above the HEAD (commit) the blame highlighting should be applied. Same as `HEAD~n` in git."
+        },
+        "typescriptExplicitTypes.blameHighlightingShowStatus": {
+          "type": "boolean",
+          "default": true,
+          "description": "Controls whether to show the blame highlighting for the active editor in the status bar."
+        },
+        "typescriptExplicitTypes.blameHighlightingShowToastParentLevel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Controls whether to show a toast notification when blame highlighting is changed."
         },
         "typescriptExplicitTypes.preferable": {
           "type": "boolean",
