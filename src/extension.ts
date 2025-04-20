@@ -7,6 +7,7 @@ import {
   window,
   OverviewRulerLane,
   extensions,
+  StatusBarAlignment,
 } from 'vscode';
 import type {
   LogOutputChannel,
@@ -15,6 +16,7 @@ import type {
   Disposable,
   TextEditor,
   TextDocument,
+  StatusBarItem,
   // Extension,
 } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
@@ -42,8 +44,9 @@ export const textEditorHighlightStyles: { latestHighlight: TextEditorDecorationT
 };
 
 const repositoryStateListeners = new Map<Uri, Disposable>();
+let myStatusBarItem: StatusBarItem;
 
-function enableGitExtensionFunctionality(context: ExtensionContext) {
+function enableGitExtensionFunctionality(subscriptions: Disposable[]) {
   try {
     const gitExtension: GitExtension | undefined =
       extensions.getExtension<GitExtension>('vscode.git')?.exports;
@@ -89,8 +92,8 @@ function enableGitExtensionFunctionality(context: ExtensionContext) {
 
       // Store the disposable listener
       repositoryStateListeners.set(repoUri, stateChangeListener);
-      // Also add to context.subscriptions for automatic cleanup on extension deactivation
-      context.subscriptions.push(stateChangeListener);
+      // Also add to subscriptions for automatic cleanup on extension deactivation
+      subscriptions.push(stateChangeListener);
     };
 
     // Function to unsubscribe from a repository's state changes
@@ -109,11 +112,11 @@ function enableGitExtensionFunctionality(context: ExtensionContext) {
 
     // 2. Subscribe to repositories opened *after* activation
     const openRepoListener = gitApi.onDidOpenRepository(subscribeToRepositoryState);
-    context.subscriptions.push(openRepoListener); // Add listener disposable to context
+    subscriptions.push(openRepoListener); // Add listener disposable to context
 
     // 3. Unsubscribe when repositories are closed
     const closeRepoListener = gitApi.onDidCloseRepository(unsubscribeFromRepositoryState);
-    context.subscriptions.push(closeRepoListener); // Add listener disposable to context
+    subscriptions.push(closeRepoListener); // Add listener disposable to context
 
     outputChannel!.info('Successfully subscribed to Git repository state changes.');
   } catch (error) {
@@ -121,7 +124,7 @@ function enableGitExtensionFunctionality(context: ExtensionContext) {
   }
 }
 
-export function activate(context: ExtensionContext) {
+export function activate({ subscriptions }: ExtensionContext) {
   // Create a custom channel for logging
   outputChannel = window.createOutputChannel('typescriptExplicitTypes', { log: true });
 
@@ -140,20 +143,36 @@ export function activate(context: ExtensionContext) {
 
   const toggleQuotesCommand = commands.registerCommand(toogleQuotesCommandId, toggleQuotes);
 
-  context.subscriptions.push(command);
-  context.subscriptions.push(codeActionProvider);
-  context.subscriptions.push(toggleQuotesCommand);
-  context.subscriptions.push(textEditorHighlightStyles.latestHighlight);
+  subscriptions.push(command);
+  subscriptions.push(codeActionProvider);
+  subscriptions.push(toggleQuotesCommand);
+  subscriptions.push(textEditorHighlightStyles.latestHighlight);
 
-  context.subscriptions.push(
+  myStatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 1);
+  subscriptions.push(myStatusBarItem);
+  myStatusBarItem.text = `My Test Status Bar Item`;
+  myStatusBarItem.show();
+
+  subscriptions.push(
     window.onDidChangeActiveTextEditor(async (editor) => {
       if (editor) {
         await triggerUpdateDecorationsNow(editor);
+
+        // try {
+        //   const ranges = await getRangesFromBinary(filePath);
+        //   if (ranges.length > 0) {
+        //     editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
+        //   }
+        // } catch (error: unknown) {
+        //   outputChannel!.error(`Highlighting failed for ${filePath}:`, error); // Log errors
+        //   outputChannel!.show(); // Optionally show the channel on error
+        //   editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+        // }
       }
     }),
   );
 
-  context.subscriptions.push(
+  subscriptions.push(
     workspace.onDidSaveTextDocument((event: TextDocument) => {
       const eventDocumentUri = event.uri;
       if (eventDocumentUri.scheme === 'file') {
@@ -182,14 +201,12 @@ export function activate(context: ExtensionContext) {
   }, 4000);
 
   // setTimeout(() => {
-  //   enableGitExtensionFunctionality(context);
+  //   enableGitExtensionFunctionality(subscriptions);
   // }, 4000);
 
   outputChannel.appendLine('Extension activated.'); // Initial activation log
-  window.showInformationMessage('Hello World from Your Extension!', {
-    modal: true,
-    detail: 'This is a detailed message.',
-  });
+  // window.showInformationMessage('Hello World from Your Extension!', {
+  // });
 }
 
 export function deactivate() {
