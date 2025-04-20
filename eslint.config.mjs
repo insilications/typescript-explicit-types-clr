@@ -56,6 +56,10 @@ export default tseslint.config(
           format: ['camelCase'],
         },
         {
+          selector: ['variable'],
+          format: ['camelCase'],
+        },
+        {
           selector: ['function'],
           format: ['camelCase'],
         },

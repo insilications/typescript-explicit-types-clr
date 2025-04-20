@@ -17,6 +17,7 @@ import type {
   TextEditor,
   TextDocument,
   StatusBarItem,
+  WorkspaceConfiguration,
   // Extension,
 } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
@@ -27,6 +28,8 @@ import {
   triggerUpdateDecorationsDebounce,
   getCommitSubject,
 } from './blameLineHighlight';
+import type { TypescriptExplicitTypesSettings } from './types/types';
+import { inspect } from 'node:util';
 
 export let outputChannel: LogOutputChannel | undefined;
 
@@ -43,9 +46,155 @@ export const textEditorHighlightStyles: { latestHighlight: TextEditorDecorationT
     // borderColor: 'rgb(255, 0, 0)',
   }),
 };
+export let BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING = 'HEAD~1';
 
 const repositoryStateListeners = new Map<Uri, Disposable>();
 let myStatusBarItem: StatusBarItem;
+let typescriptExplicitTypesSettings: WorkspaceConfiguration & TypescriptExplicitTypesSettings;
+
+export function activate({ subscriptions }: ExtensionContext) {
+  // Create a custom channel for logging
+  outputChannel = window.createOutputChannel('typescriptExplicitTypes', { log: true });
+  getAllTypescriptExplicitTypesSetting();
+
+  //    typescriptExplicitTypesSettings: {
+  //   has: [Function: has],
+  //   get: [Function: get],
+  //   update: [Function: update],
+  //   inspect: [Function: inspect],
+  //   blameHighlightinglogLevel: 'Info',
+  //   blameHighlightingParentLevel: '1',
+  //   blameHighlightingShowStatus: true,
+  //   blameHighlightingShowToastParentLevel: true,
+  //   preferable: true,
+  //   formatAfterGeneration: true,
+  //   togglequotes: { chars: [] },
+  //   logLevel: 'Debug'
+  // }
+
+  const selector: DocumentFilter[] = [];
+  for (const language of ['typescript', 'typescriptreact', 'svelte']) {
+    selector.push({ language, scheme: 'file' });
+    selector.push({ language, scheme: 'untitled' });
+  }
+
+  const command = commands.registerCommand(commandId, commandHandler);
+  const codeActionProvider = languages.registerCodeActionsProvider(
+    selector,
+    new GenereateTypeProvider(),
+    GenereateTypeProvider.metadata,
+  );
+
+  const toggleQuotesCommand = commands.registerCommand(toogleQuotesCommandId, toggleQuotes);
+
+  subscriptions.push(command);
+  subscriptions.push(codeActionProvider);
+  subscriptions.push(toggleQuotesCommand);
+  subscriptions.push(textEditorHighlightStyles.latestHighlight);
+
+  if (typescriptExplicitTypesSettings.blameHighlightingShowStatus) {
+    myStatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 1);
+    subscriptions.push(myStatusBarItem);
+  }
+
+  subscriptions.push(
+    window.onDidChangeActiveTextEditor(async (editor) => {
+      if (editor) {
+        const editorDocument: TextDocument = editor.document;
+        if (editorDocument.uri.scheme === 'file') {
+          const editorDocumentFileName = editorDocument.fileName;
+          outputChannel!.debug(
+            `0 - onDidChangeActiveTextEditor - editorDocumentFileName: ${editorDocumentFileName}`,
+          );
+          void triggerUpdateDecorationsNow(editor, editorDocument, editorDocumentFileName);
+
+          if (typescriptExplicitTypesSettings.blameHighlightingShowStatus) {
+            try {
+              const subject = await getCommitSubject(
+                BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING,
+                editorDocumentFileName,
+              );
+              myStatusBarItem.text = `${BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING}: ${subject}`;
+              myStatusBarItem.show();
+            } catch (error: unknown) {
+              myStatusBarItem.hide();
+              outputChannel!.error(`getCommitSubject for ${editorDocumentFileName} failed:`, error);
+              outputChannel!.show();
+            }
+          }
+        }
+      }
+    }),
+  );
+
+  subscriptions.push(
+    workspace.onDidSaveTextDocument((event: TextDocument) => {
+      if (event.uri.scheme === 'file') {
+        const eventFileName = event.fileName;
+        for (const visibleEditor of window.visibleTextEditors) {
+          const visibleEditorDocument = visibleEditor.document;
+          const visibleEditorDocumentFileName = visibleEditorDocument.fileName;
+          outputChannel!.debug(
+            `0 - onDidSaveTextDocument - PORRA: ${visibleEditorDocumentFileName}`,
+          );
+          if (eventFileName == visibleEditorDocumentFileName) {
+            outputChannel!.debug(
+              `1 - onDidSaveTextDocument - visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
+            );
+            triggerUpdateDecorationsDebounce(
+              visibleEditor,
+              visibleEditorDocument,
+              visibleEditorDocumentFileName,
+            );
+          }
+        }
+      }
+    }),
+  );
+
+  setTimeout(() => {
+    for (const visibleEditor of window.visibleTextEditors) {
+      const visibleEditorDocument = visibleEditor.document;
+      if (visibleEditorDocument.uri.scheme === 'file') {
+        outputChannel!.debug(
+          `Calling triggerUpdateDecorationsNow for visibleEditorDocument.fileName: ${visibleEditorDocument.fileName}`,
+        );
+        void triggerUpdateDecorationsNow(
+          visibleEditor,
+          visibleEditorDocument,
+          visibleEditorDocument.fileName,
+        );
+      }
+    }
+  }, 4000);
+
+  // setTimeout(() => {
+  //   enableGitExtensionFunctionality(subscriptions);
+  // }, 4000);
+
+  outputChannel.appendLine('Extension activated.'); // Initial activation log
+  // window.showInformationMessage('Hello World from Your Extension!', {
+  // });
+}
+
+export function deactivate() {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  repositoryStateListeners.forEach((disposable: Disposable) => disposable.dispose());
+  repositoryStateListeners.clear();
+
+  if (outputChannel) {
+    outputChannel.appendLine('Extension deactivated.'); // Clean up logs
+    outputChannel.dispose(); // Dispose to free resources
+  }
+}
+
+function getAllTypescriptExplicitTypesSetting() {
+  typescriptExplicitTypesSettings = workspace.getConfiguration('typescriptExplicitTypes');
+  BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING = `HEAD~${typescriptExplicitTypesSettings.blameHighlightingParentLevel}`;
+  outputChannel!.info(
+    `typescriptExplicitTypesSettings: ${inspect(typescriptExplicitTypesSettings, { depth: null, colors: false })}`,
+  );
+}
 
 function enableGitExtensionFunctionality(subscriptions: Disposable[]) {
   try {
@@ -122,98 +271,5 @@ function enableGitExtensionFunctionality(subscriptions: Disposable[]) {
     outputChannel!.info('Successfully subscribed to Git repository state changes.');
   } catch (error) {
     outputChannel!.error('Error activating extension or interacting with Git API:', error);
-  }
-}
-
-export function activate({ subscriptions }: ExtensionContext) {
-  // Create a custom channel for logging
-  outputChannel = window.createOutputChannel('typescriptExplicitTypes', { log: true });
-
-  const selector: DocumentFilter[] = [];
-  for (const language of ['typescript', 'typescriptreact', 'svelte']) {
-    selector.push({ language, scheme: 'file' });
-    selector.push({ language, scheme: 'untitled' });
-  }
-
-  const command = commands.registerCommand(commandId, commandHandler);
-  const codeActionProvider = languages.registerCodeActionsProvider(
-    selector,
-    new GenereateTypeProvider(),
-    GenereateTypeProvider.metadata,
-  );
-
-  const toggleQuotesCommand = commands.registerCommand(toogleQuotesCommandId, toggleQuotes);
-
-  subscriptions.push(command);
-  subscriptions.push(codeActionProvider);
-  subscriptions.push(toggleQuotesCommand);
-  subscriptions.push(textEditorHighlightStyles.latestHighlight);
-
-  myStatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 1);
-  subscriptions.push(myStatusBarItem);
-
-  subscriptions.push(
-    window.onDidChangeActiveTextEditor(async (editor) => {
-      if (editor) {
-        await triggerUpdateDecorationsNow(editor);
-
-        try {
-          const subject = await getCommitSubject('HEAD~1', editor.document.uri.fsPath);
-          myStatusBarItem.text = `HEAD~1: ${subject}`;
-          myStatusBarItem.show();
-        } catch (error: unknown) {
-          myStatusBarItem.hide();
-          outputChannel!.error(`getCommitSubject for ${editor.document.uri.fsPath} failed:`, error); // Log errors
-          outputChannel!.show();
-        }
-      }
-    }),
-  );
-
-  subscriptions.push(
-    workspace.onDidSaveTextDocument((event: TextDocument) => {
-      const eventDocumentUri = event.uri;
-      if (eventDocumentUri.scheme === 'file') {
-        for (const visibleEditor of window.visibleTextEditors) {
-          if (eventDocumentUri.toString() === visibleEditor.document.uri.toString()) {
-            outputChannel!.debug(
-              `0 - onDidChangeTextDocument - visibleEditor.document.fileName: ${visibleEditor.document.fileName}`,
-            );
-            // Only run if the document is file-based.
-            triggerUpdateDecorationsDebounce(visibleEditor);
-          }
-        }
-      }
-    }),
-  );
-
-  setTimeout(() => {
-    for (const visibleEditor of window.visibleTextEditors) {
-      if (visibleEditor.document.uri.scheme === 'file') {
-        outputChannel!.debug(
-          `0 - triggerUpdateDecorations(visibleEditor) - visibleEditor: ${visibleEditor.document.fileName}`,
-        );
-        void triggerUpdateDecorationsNow(visibleEditor);
-      }
-    }
-  }, 4000);
-
-  // setTimeout(() => {
-  //   enableGitExtensionFunctionality(subscriptions);
-  // }, 4000);
-
-  outputChannel.appendLine('Extension activated.'); // Initial activation log
-  // window.showInformationMessage('Hello World from Your Extension!', {
-  // });
-}
-
-export function deactivate() {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-  repositoryStateListeners.forEach((disposable: Disposable) => disposable.dispose());
-  repositoryStateListeners.clear();
-
-  if (outputChannel) {
-    outputChannel.appendLine('Extension deactivated.'); // Clean up logs
-    outputChannel.dispose(); // Dispose to free resources
   }
 }

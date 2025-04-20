@@ -1,102 +1,161 @@
 import { Range } from 'vscode';
-import type { TextEditor, Uri } from 'vscode';
-// import type { API as GitAPI, Repository } from './types/git';
-import { outputChannel, textEditorHighlightStyles } from './extension';
+import type { TextEditor, TextDocument } from 'vscode';
+import {
+  outputChannel,
+  textEditorHighlightStyles,
+  BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING,
+} from './extension';
 import { spawn } from 'node:child_process';
-import { dirname } from 'path';
-import type { JsonOutput } from './types/types';
+import { dirname } from 'node:path';
+import type { difftasticJsonOutput, EditorCacheData } from './types/types';
 
 const GIT_BINARY_NAME = 'git';
 const GIT_DIFFTOOL_ARGS: string[] = [
   'difftool',
   '-y',
   '-x difft --context=0 --display=json2 --parse-error-limit=10 --graph-limit=9999999',
-  'HEAD~1',
-  '--',
 ];
 
-const debounceTimers = new Map<string, NodeJS.Timeout>();
-const debounceTimeMs = 3000; // Adjust as needed
+const textEditorCache = new WeakMap<TextEditor, EditorCacheData>();
+const debounceTimersPerFileCache = new Map<string, NodeJS.Timeout>();
+const triggerUpdateDecorationsDebounceTimeMs = 3000; // Adjust as needed
 
-/**
- * Gets the subject line of a commit that touches a given filePath.
- * Runs: git log -1 --format=%s <commit> -- <filePath>
- *
- * @param commit   SHA/branch/tag/etc.
- * @param filePath     Path relative to the repository root.
- */
-export async function getCommitSubject(commit: string, filePath: string): Promise<string> {
-  // const cacheKey = `${commit}␟${filePath}`; // ␟ = unlikely in paths/SHAs
-  // const cached = CACHE.get(cacheKey);
-  // if (cached !== undefined) return cached;
+const dirNameForFileNameCache = new Map<string, string>();
+const commitSubjectCache = new Map<string, string>();
 
+// git rev-list -1 HEAD~1 -- client/src/hooks/SSE/useSSE.ts
+async function getCommitHashIdFromRevSpec(revSpec: string, fileName: string): Promise<string> {
   return new Promise<string>((resolve, reject) => {
-    const proc = spawn(GIT_BINARY_NAME, ['log', '-1', '--format=%s', commit, '--', filePath], {
+    let cachedDirname: string | undefined = dirNameForFileNameCache.get(fileName);
+    if (cachedDirname == undefined) {
+      cachedDirname = dirname(fileName);
+      dirNameForFileNameCache.set(fileName, cachedDirname);
+    }
+
+    const proc = spawn(GIT_BINARY_NAME, ['rev-list', '-1', revSpec, '--', fileName], {
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
-      // CACHE THIS?
-      cwd: dirname(filePath),
+      cwd: cachedDirname,
     });
 
-    let out = '';
-    let err = '';
+    let stdoutData = '';
+    let stderrData = '';
 
     proc.stdout.setEncoding('utf8');
-    proc.stdout.on('data', (chunk: string) => (out += chunk));
-
+    proc.stdout.on('data', (chunk: string) => (stdoutData += chunk));
     proc.stderr.setEncoding('utf8');
-    proc.stderr.on('data', (chunk: string) => (err += chunk));
+    proc.stderr.on('data', (chunk: string) => (stderrData += chunk));
 
     proc.once('error', reject);
-
     proc.once('close', (code) => {
       if (code === 0) {
-        const subject = out.trimEnd(); // strip trailing newline
-        // CACHE.set(cacheKey, subject);
+        resolve(stdoutData.trimEnd()); // strip trailing newline
+      } else {
+        reject(new Error(`git exited with code ${code}: ${stderrData.trimEnd()}`));
+      }
+    });
+  });
+}
+
+/**
+ * Gets the subject line of a revision spec that touches a given filesystem path.
+ * Runs: git log -1 --format=%s <revSpec> -- <fileName>
+ *
+ * @param revSpec Revision specifier (i.e. HEAD~1)
+ * @param fileName Filesystem path of the file to check
+ */
+export async function getCommitSubject(revSpec: string, fileName: string): Promise<string> {
+  let cacheKey = '';
+
+  try {
+    const commitHashId = await getCommitHashIdFromRevSpec(revSpec, fileName);
+    cacheKey = `${commitHashId}␟${fileName}`; // ␟ = unlikely in paths/SHAs
+    const cachedCommitSubject = commitSubjectCache.get(cacheKey);
+    if (cachedCommitSubject !== undefined) {
+      return cachedCommitSubject;
+    }
+  } catch (error: unknown) {
+    outputChannel!.error(`getCommitHashIdFromRevSpec for ${fileName} failed:`, error); // Log errors
+    outputChannel!.show();
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    let cachedDirname: string | undefined = dirNameForFileNameCache.get(fileName);
+    if (cachedDirname == undefined) {
+      cachedDirname = dirname(fileName);
+      dirNameForFileNameCache.set(fileName, cachedDirname);
+    }
+
+    const proc = spawn(GIT_BINARY_NAME, ['log', '-1', '--format=%s', revSpec, '--', fileName], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+      cwd: cachedDirname,
+    });
+
+    let stdoutData = '';
+    let stderrData = '';
+
+    proc.stdout.setEncoding('utf8');
+    proc.stdout.on('data', (chunk: string) => (stdoutData += chunk));
+    proc.stderr.setEncoding('utf8');
+    proc.stderr.on('data', (chunk: string) => (stderrData += chunk));
+
+    proc.once('error', reject);
+    proc.once('close', (code) => {
+      if (code === 0) {
+        const subject = stdoutData.trimEnd(); // strip trailing newline
+        commitSubjectCache.set(cacheKey, subject);
         resolve(subject);
       } else {
-        reject(new Error(`git exited with code ${code}: ${err.trimEnd()}`));
+        reject(new Error(`git exited with code ${code}: ${stderrData.trimEnd()}`));
       }
     });
   });
 }
 
 // Function to run the binary and parse output
-async function getRangesFromBinary(filePath: string): Promise<Range[]> {
+async function getRangesFromBinary(fileName: string): Promise<Range[]> {
   return new Promise((resolve, reject) => {
+    let cachedDirname: string | undefined = dirNameForFileNameCache.get(fileName);
+    if (cachedDirname == undefined) {
+      cachedDirname = dirname(fileName);
+      dirNameForFileNameCache.set(fileName, cachedDirname);
+    }
+
+    // Using spawn for better performance and stream handling
+    const proc = spawn(
+      GIT_BINARY_NAME,
+      [...GIT_DIFFTOOL_ARGS, BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING, '--', fileName],
+      {
+        // Prevent a shell window from popping up on Windows
+        windowsHide: true,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        cwd: cachedDirname,
+      },
+    );
+
     let stdoutData = '';
     let stderrData = '';
 
-    // Using spawn for better performance and stream handling
-    const process = spawn(GIT_BINARY_NAME, [...GIT_DIFFTOOL_ARGS, filePath], {
-      // Prevent a shell window from popping up on Windows
-      windowsHide: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      cwd: dirname(filePath), // Run in `filePath` directory
-    });
-
-    process.stdout.on('data', (data: Buffer | string) => {
+    proc.stdout.on('data', (data: Buffer | string) => {
       stdoutData += data.toString();
     });
-
-    process.stderr.on('data', (data: Buffer | string) => {
+    proc.stderr.on('data', (data: Buffer | string) => {
       stderrData += data.toString();
     });
 
-    process.on('error', (err) => {
+    proc.on('error', (err) => {
       // Handle errors like binary not found (ENOENT)
       reject(new Error(`Failed to start '${GIT_BINARY_NAME}': ${err.message}`));
     });
-
-    process.on('close', (code) => {
+    proc.on('close', (code) => {
       if (stderrData) {
-        outputChannel!.warn(`Stderr from '${GIT_BINARY_NAME}' for ${filePath}:\n${stderrData}`);
+        outputChannel!.warn(`Stderr from '${GIT_BINARY_NAME}' for ${fileName}:\n${stderrData}`);
       }
 
       if (code !== 0) {
         // Binary exited with an error code
-        const errorMessage = stderrData || `Binary '${GIT_BINARY_NAME}' exited with code ${code}`;
-        reject(new Error(errorMessage));
+        reject(new Error(stderrData || `Binary '${GIT_BINARY_NAME}' exited with code ${code}`));
         return;
       }
 
@@ -106,13 +165,13 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
           // Handle cases where the binary might output nothing on success
           // (e.g., filePath not tracked, no changes in last commit)
           outputChannel!.debug(
-            `No output from '${GIT_BINARY_NAME}' for ${filePath}. Assuming no changes.`,
+            `No output from '${GIT_BINARY_NAME}' for ${fileName}. Assuming no changes.`,
           );
           resolve([]);
           return;
         }
 
-        const outputJson = JSON.parse(stdoutData) as JsonOutput;
+        const outputJson = JSON.parse(stdoutData) as difftasticJsonOutput;
         const ranges: Range[] = [];
 
         // JSON Parsing and Range Mapping
@@ -131,7 +190,7 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
 
         resolve(ranges);
       } catch (parseError: unknown) {
-        outputChannel!.debug(`Raw output for ${filePath}:`, stdoutData); // Log raw output for debugging
+        outputChannel!.debug(`Raw output for ${fileName}:`, stdoutData); // Log raw output for debugging
         if (parseError instanceof Error) {
           reject(new Error(`Failed to parse JSON output: ${parseError.message}`));
         } else {
@@ -142,68 +201,110 @@ async function getRangesFromBinary(filePath: string): Promise<Range[]> {
   });
 }
 
-export async function updateDecorations(editor: TextEditor, documentUri: Uri) {
-  const filePath = documentUri.fsPath;
-  outputChannel!.debug(`0 - updateDecorations - filePath: ${filePath}`);
-
+export async function updateDecorations(editor: TextEditor, fileName: string) {
   // Clear existing decorations before starting
   editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+  outputChannel!.debug(
+    `0 - updateDecorations - Cleared existing decorations - fileName: ${fileName}`,
+  );
 
   try {
-    const ranges = await getRangesFromBinary(filePath);
+    const ranges: Range[] = await getRangesFromBinary(fileName);
     if (ranges.length > 0) {
       editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
+      outputChannel!.debug(`Decorations set for fileName: ${fileName}`);
     }
   } catch (error: unknown) {
-    outputChannel!.error(`Highlighting failed for ${filePath}:`, error); // Log errors
-    outputChannel!.show(); // Optionally show the channel on error
     editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+    outputChannel!.error(`setDecorations failed for ${fileName}:`, error); // Log errors
+    outputChannel!.show();
   }
 }
 
-export async function triggerUpdateDecorationsNow(editor: TextEditor) {
-  const editorDocument = editor.document;
-  const documentUri = editorDocument.uri;
-
+export async function triggerUpdateDecorationsNow(
+  editor: TextEditor,
+  editorDocument: TextDocument,
+  fileName: string,
+) {
   // Only run if the document is filePath-based and not untitled etc.
-  if (documentUri.scheme !== 'filePath') {
-    editor.setDecorations(textEditorHighlightStyles.latestHighlight, []); // Clear if not a filePath
-    return;
-  }
+  // if (documentUri.scheme !== 'file') {
+  //   editor.setDecorations(textEditorHighlightStyles.latestHighlight, []); // Clear if not a filePath
+  //   return;
+  // }
 
   if (!editorDocument.isClosed) {
-    await updateDecorations(editor, documentUri);
+    outputChannel!.debug(`0 - triggerUpdateDecorationsNow - fileName: ${fileName}`);
+    await updateDecorations(editor, fileName);
   }
 }
 
-export function triggerUpdateDecorationsDebounce(editor: TextEditor): void {
-  const editorDocument = editor.document;
-  const documentUri = editorDocument.uri;
-  const editorId = documentUri.toString();
-
+export function triggerUpdateDecorationsDebounce(
+  editor: TextEditor,
+  editorDocument: TextDocument,
+  editorDocumentFileName: string,
+): void {
+  // const editorDocumentFileName = editor.document.fileName;
   // Clear any existing timer for this specific editor
-  if (debounceTimers.has(editorId)) {
-    outputChannel!.debug(`Skipping update for ${editorId} - debounce active`);
-    clearTimeout(debounceTimers.get(editorId));
-    debounceTimers.delete(editorId);
+  if (textEditorCache.has(editor)) {
+    const { debounceTimer } = textEditorCache.get(editor);
+    clearTimeout(debounceTimersPerFileCache.get(editorDocumentFileName));
+    debounceTimersPerFileCache.delete(editorDocumentFileName);
+    outputChannel!.debug(`Skipping update for ${editorDocumentFileName} - debounce active`);
   }
 
   // Early exit for non-filePath documents
-  if (documentUri.scheme !== 'filePath') {
-    editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
-    return;
-  }
+  // if (documentUri.scheme !== 'file') {
+  //   editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+  //   return;
+  // }
 
   // Set new timer
-  debounceTimers.set(
-    editorId,
+  debounceTimersPerFileCache.set(
+    editorDocumentFileName,
     setTimeout(() => {
-      debounceTimers.delete(editorId);
+      debounceTimersPerFileCache.delete(editorDocumentFileName);
       // Check if editor is still valid before updating
       if (!editorDocument.isClosed) {
-        outputChannel!.debug(`0 - triggerUpdateDecorationsDebounce - editorId: ${editorId}`);
-        void updateDecorations(editor, documentUri);
+        outputChannel!.debug(
+          `0 - triggerUpdateDecorationsDebounce - fileName: ${editorDocumentFileName}`,
+        );
+        void updateDecorations(editor, editorDocumentFileName);
       }
-    }, debounceTimeMs),
+    }, triggerUpdateDecorationsDebounceTimeMs),
   );
 }
+
+// export function triggerUpdateDecorationsDebounce(
+//   editor: TextEditor,
+//   editorDocument: TextDocument,
+//   editorDocumentFileName: string,
+// ): void {
+//   // const editorDocumentFileName = editor.document.fileName;
+//   // Clear any existing timer for this specific editor
+//   if (debounceTimersPerFileCache.has(editorDocumentFileName)) {
+//     clearTimeout(debounceTimersPerFileCache.get(editorDocumentFileName));
+//     debounceTimersPerFileCache.delete(editorDocumentFileName);
+//     outputChannel!.debug(`Skipping update for ${editorDocumentFileName} - debounce active`);
+//   }
+
+//   // Early exit for non-filePath documents
+//   // if (documentUri.scheme !== 'file') {
+//   //   editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+//   //   return;
+//   // }
+
+//   // Set new timer
+//   debounceTimersPerFileCache.set(
+//     editorDocumentFileName,
+//     setTimeout(() => {
+//       debounceTimersPerFileCache.delete(editorDocumentFileName);
+//       // Check if editor is still valid before updating
+//       if (!editorDocument.isClosed) {
+//         outputChannel!.debug(
+//           `0 - triggerUpdateDecorationsDebounce - fileName: ${editorDocumentFileName}`,
+//         );
+//         void updateDecorations(editor, editorDocumentFileName);
+//       }
+//     }, triggerUpdateDecorationsDebounceTimeMs),
+//   );
+// }
