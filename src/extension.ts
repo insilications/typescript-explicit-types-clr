@@ -14,6 +14,7 @@ import type {
   Uri,
   Disposable,
   TextEditor,
+  TextDocument,
   // Extension,
 } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
@@ -153,19 +154,17 @@ export function activate(context: ExtensionContext) {
   );
 
   context.subscriptions.push(
-    workspace.onDidChangeTextDocument((event) => {
-      const eventDocumentUri = event.document.uri;
+    workspace.onDidSaveTextDocument((event: TextDocument) => {
+      const eventDocumentUri = event.uri;
       if (eventDocumentUri.scheme === 'file') {
-        const editorsWithDocument = window.visibleTextEditors.filter(
-          (editor) => editor.document.uri.toString() === eventDocumentUri.toString(),
-        );
-
-        if (editorsWithDocument.length > 0) {
-          outputChannel!.debug(
-            `0 - onDidChangeTextDocument - editorsWithDocument[0].document.fileName: ${editorsWithDocument[0].document.fileName}`,
-          );
-          // Only use the first editor for this document
-          triggerUpdateDecorationsDebounce(editorsWithDocument[0]);
+        for (const visibleEditor of window.visibleTextEditors) {
+          if (eventDocumentUri.toString() === visibleEditor.document.uri.toString()) {
+            outputChannel!.debug(
+              `0 - onDidChangeTextDocument - visibleEditor.document.fileName: ${visibleEditor.document.fileName}`,
+            );
+            // Only run if the document is file-based.
+            triggerUpdateDecorationsDebounce(visibleEditor);
+          }
         }
       }
     }),
@@ -182,15 +181,20 @@ export function activate(context: ExtensionContext) {
     }
   }, 4000);
 
-  setTimeout(() => {
-    enableGitExtensionFunctionality(context);
-  }, 4000);
+  // setTimeout(() => {
+  //   enableGitExtensionFunctionality(context);
+  // }, 4000);
 
   outputChannel.appendLine('Extension activated.'); // Initial activation log
+  window.showInformationMessage('Hello World from Your Extension!', {
+    modal: true,
+    detail: 'This is a detailed message.',
+  });
 }
 
 export function deactivate() {
-  repositoryStateListeners.forEach((disposable: Disposable): any => disposable.dispose());
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  repositoryStateListeners.forEach((disposable: Disposable) => disposable.dispose());
   repositoryStateListeners.clear();
 
   if (outputChannel) {
