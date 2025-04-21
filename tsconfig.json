@@ -7,7 +7,6 @@
     "outDir": "out",
     "declaration": true,
     "sourceMap": true,
-    "baseUrl": "./",
     "rootDir": "src",
     "resolveJsonModule": true,
     "strict": true,
@@ -17,7 +16,8 @@
     "isolatedModules": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
-    "noImplicitOverride": true
+    "noImplicitOverride": true,
+    "skipLibCheck": true
   },
   "exclude": ["node_modules", ".vscode-test", "eslint.config.mjs"],
   "include": ["src/**/*", "src/types/*.d.ts"]

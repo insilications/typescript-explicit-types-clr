@@ -203,10 +203,10 @@ async function getRangesFromBinary(fileName: string): Promise<Range[]> {
 
 export async function updateDecorations(editor: TextEditor, fileName: string) {
   // Clear existing decorations before starting
-  editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
-  outputChannel!.debug(
-    `0 - updateDecorations - Cleared existing decorations - fileName: ${fileName}`,
-  );
+  // editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+  // outputChannel!.debug(
+  //   `0 - updateDecorations - Cleared existing decorations - fileName: ${fileName}`,
+  // );
 
   try {
     const ranges: Range[] = await getRangesFromBinary(fileName);
@@ -226,12 +226,6 @@ export async function triggerUpdateDecorationsNow(
   editorDocument: TextDocument,
   fileName: string,
 ) {
-  // Only run if the document is filePath-based and not untitled etc.
-  // if (documentUri.scheme !== 'file') {
-  //   editor.setDecorations(textEditorHighlightStyles.latestHighlight, []); // Clear if not a filePath
-  //   return;
-  // }
-
   if (!editorDocument.isClosed) {
     outputChannel!.debug(`0 - triggerUpdateDecorationsNow - fileName: ${fileName}`);
     await updateDecorations(editor, fileName);
@@ -244,26 +238,27 @@ export function triggerUpdateDecorationsDebounce(
   editorDocumentFileName: string,
 ): void {
   // Clear any existing timer for this specific editor
-  if (textEditorCache.has(editor)) {
-    const editorCacheData: EditorCacheData | undefined = textEditorCache.get(editor);
-    if (editorCacheData) {
-      clearTimeout(editorCacheData.debounceTimer);
-      textEditorCache.delete(editor);
-      outputChannel!.debug(`Skipping update for ${editorDocumentFileName} - debounce active`);
-    }
+  const editorCacheData = textEditorCache.get(editor);
+  if (editorCacheData) {
+    clearTimeout(editorCacheData.debounceTimer);
+    textEditorCache.delete(editor);
+    outputChannel!.debug(`Skipping update for ${editorDocumentFileName} - debounce active`);
   }
 
-  // Set new timer
-  textEditorCache.set(editor, {
-    debounceTimer: setTimeout(() => {
-      debounceTimersPerFileCache.delete(editorDocumentFileName);
-      // Check if editor is still valid before updating
-      if (!editorDocument.isClosed) {
-        outputChannel!.debug(
+  const debounceTimer = setTimeout(() => {
+    debounceTimersPerFileCache.delete(editorDocumentFileName);
+
+    // Check if editor is still valid before updating
+    if (!editorDocument.isClosed) {
+      if (outputChannel) {
+        outputChannel.debug(
           `0 - triggerUpdateDecorationsDebounce - fileName: ${editorDocumentFileName}`,
         );
-        void updateDecorations(editor, editorDocumentFileName);
       }
-    }, triggerUpdateDecorationsDebounceTimeMs),
-  });
+      void updateDecorations(editor, editorDocumentFileName);
+    }
+  }, triggerUpdateDecorationsDebounceTimeMs);
+
+  // Set new timer with minimal object creation
+  textEditorCache.set(editor, { debounceTimer });
 }
