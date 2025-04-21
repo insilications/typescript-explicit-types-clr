@@ -243,25 +243,19 @@ export function triggerUpdateDecorationsDebounce(
   editorDocument: TextDocument,
   editorDocumentFileName: string,
 ): void {
-  // const editorDocumentFileName = editor.document.fileName;
   // Clear any existing timer for this specific editor
   if (textEditorCache.has(editor)) {
-    const { debounceTimer } = textEditorCache.get(editor);
-    clearTimeout(debounceTimersPerFileCache.get(editorDocumentFileName));
-    debounceTimersPerFileCache.delete(editorDocumentFileName);
-    outputChannel!.debug(`Skipping update for ${editorDocumentFileName} - debounce active`);
+    const editorCacheData: EditorCacheData | undefined = textEditorCache.get(editor);
+    if (editorCacheData) {
+      clearTimeout(editorCacheData.debounceTimer);
+      textEditorCache.delete(editor);
+      outputChannel!.debug(`Skipping update for ${editorDocumentFileName} - debounce active`);
+    }
   }
 
-  // Early exit for non-filePath documents
-  // if (documentUri.scheme !== 'file') {
-  //   editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
-  //   return;
-  // }
-
   // Set new timer
-  debounceTimersPerFileCache.set(
-    editorDocumentFileName,
-    setTimeout(() => {
+  textEditorCache.set(editor, {
+    debounceTimer: setTimeout(() => {
       debounceTimersPerFileCache.delete(editorDocumentFileName);
       // Check if editor is still valid before updating
       if (!editorDocument.isClosed) {
@@ -271,40 +265,5 @@ export function triggerUpdateDecorationsDebounce(
         void updateDecorations(editor, editorDocumentFileName);
       }
     }, triggerUpdateDecorationsDebounceTimeMs),
-  );
+  });
 }
-
-// export function triggerUpdateDecorationsDebounce(
-//   editor: TextEditor,
-//   editorDocument: TextDocument,
-//   editorDocumentFileName: string,
-// ): void {
-//   // const editorDocumentFileName = editor.document.fileName;
-//   // Clear any existing timer for this specific editor
-//   if (debounceTimersPerFileCache.has(editorDocumentFileName)) {
-//     clearTimeout(debounceTimersPerFileCache.get(editorDocumentFileName));
-//     debounceTimersPerFileCache.delete(editorDocumentFileName);
-//     outputChannel!.debug(`Skipping update for ${editorDocumentFileName} - debounce active`);
-//   }
-
-//   // Early exit for non-filePath documents
-//   // if (documentUri.scheme !== 'file') {
-//   //   editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
-//   //   return;
-//   // }
-
-//   // Set new timer
-//   debounceTimersPerFileCache.set(
-//     editorDocumentFileName,
-//     setTimeout(() => {
-//       debounceTimersPerFileCache.delete(editorDocumentFileName);
-//       // Check if editor is still valid before updating
-//       if (!editorDocument.isClosed) {
-//         outputChannel!.debug(
-//           `0 - triggerUpdateDecorationsDebounce - fileName: ${editorDocumentFileName}`,
-//         );
-//         void updateDecorations(editor, editorDocumentFileName);
-//       }
-//     }, triggerUpdateDecorationsDebounceTimeMs),
-//   );
-// }
