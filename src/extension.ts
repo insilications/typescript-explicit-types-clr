@@ -30,6 +30,7 @@ import {
 } from './blameLineHighlight';
 import type { TypescriptExplicitTypesSettings } from './types/types';
 import { inspect } from 'node:util';
+import { startLSP } from './lspClient';
 
 export let outputChannel: LogOutputChannel | undefined;
 
@@ -171,6 +172,8 @@ export function activate({ subscriptions }: ExtensionContext) {
   // setTimeout(() => {
   //   enableGitExtensionFunctionality(subscriptions);
   // }, 4000);
+
+  startLSP(subscriptions);
 
   outputChannel.appendLine('Extension activated.'); // Initial activation log
   // window.showInformationMessage('Hello World from Your Extension!', {
