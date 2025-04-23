@@ -12,7 +12,11 @@ import {
   TransportKind, // We'll likely use stdio
   RevealOutputChannelOn,
 } from 'vscode-languageclient/node';
-import type { LanguageClientOptions, ServerOptions } from 'vscode-languageclient/node';
+import type {
+  LanguageClientOptions,
+  ServerOptions,
+  InitializeParams,
+} from 'vscode-languageclient/node';
 
 const LSP_BINARY_NAME = '/usr/bin/difft';
 const LSP_ARGS: string[] = [
@@ -23,7 +27,16 @@ const LSP_ARGS: string[] = [
   '--lsp',
 ];
 
-let client: LanguageClient | undefined;
+class LanguageClientCustom extends LanguageClient {
+  protected override fillInitializeParams(params: InitializeParams): void {
+    params.capabilities.experimental = {
+      diff: true,
+    };
+    super.fillInitializeParams(params);
+  }
+}
+
+let client: LanguageClientCustom | undefined;
 
 export function startLSP(subscriptions: Disposable[]) {
   // --- Server Options ---
@@ -62,7 +75,7 @@ export function startLSP(subscriptions: Disposable[]) {
 
   // --- Create and Start the Client ---
   try {
-    client = new LanguageClient(
+    client = new LanguageClientCustom(
       'mylangLanguageServerRust', // Unique ID for the client instance
       'MyLang Language Server (Rust)', // Name shown in VS Code's Output panel
       serverOptions,
