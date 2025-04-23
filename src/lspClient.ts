@@ -56,6 +56,7 @@ export function startLSP(subscriptions: Disposable[]) {
   const clientOptions: LanguageClientOptions = {
     // Register the server for 'mylang' documents
     // documentSelector: [{ scheme: 'file', language: 'mylang' }],
+    documentSelector: [{ scheme: 'file' }],
 
     // Synchronize workspace settings under the 'mylang' section
     // synchronize: {
@@ -76,8 +77,8 @@ export function startLSP(subscriptions: Disposable[]) {
   // --- Create and Start the Client ---
   try {
     client = new LanguageClientCustom(
-      'mylangLanguageServerRust', // Unique ID for the client instance
-      'MyLang Language Server (Rust)', // Name shown in VS Code's Output panel
+      'difftastic-lsp-client', // Unique ID for the client instance
+      'Difftastic LSP Client', // Name shown in VS Code's Output panel
       serverOptions,
       clientOptions,
     );
@@ -87,20 +88,20 @@ export function startLSP(subscriptions: Disposable[]) {
     client
       .start()
       .then(() => {
-        console.log('MyLang language client (Rust Server) started successfully.');
+        console.log('Difftastic LSP Client started successfully.');
         // Optional: Add listener for configuration changes after the client is ready
         // (Same as before, if needed)
       })
       .catch((error) => {
         // Provide more specific feedback if possible
         window.showErrorMessage(
-          `Failed to start MyLang language client (Rust Server): ${error}. Ensure the executable exists, has execute permissions, and starts correctly.`,
+          `Failed to start Difftastic LSP Server: ${error}. Ensure the executable exists, has execute permissions, and starts correctly.`,
         );
-        console.error('Failed to start MyLang language client:', error);
+        console.error('Failed to start Difftastic LSP Client:', error);
       });
   } catch (error) {
-    window.showErrorMessage(`Error creating MyLang language client (Rust Server): ${error}`);
-    console.error('Error creating MyLang language client:', error);
+    window.showErrorMessage(`Error creating Difftastic LSP Server: ${error}`);
+    console.error('Error creating Difftastic LSP Client:', error);
   }
 
   // Ensure the client is stopped when the extension is deactivated
@@ -110,25 +111,25 @@ export function startLSP(subscriptions: Disposable[]) {
     },
   });
 
-  console.log('MyLang extension activation finished.');
+  console.log('Difftastic LSP Client extension activation finished.');
 }
 
 export function deactivate(): Thenable<void> | undefined {
-  console.log('Deactivating MyLang extension (Rust Server)...');
+  console.log('Deactivating Difftastic LSP Client...');
   if (!client) {
-    console.log('MyLang client not active.');
+    console.log('Difftastic LSP Client not active.');
     return undefined;
   }
   // client.stop() will send 'shutdown' and 'exit' notifications to the server
   // and terminate the process if it doesn't exit gracefully.
   const stopPromise = client.stop();
   client = undefined; // Clear the reference
-  console.log('MyLang client stopping...');
+  console.log('Difftastic LSP Client stopping...');
   return stopPromise
     .then(() => {
-      console.log('MyLang client stopped.');
+      console.log('Difftastic LSP Client stopped.');
     })
     .catch((err) => {
-      console.error('Error stopping MyLang client:', err);
+      console.error('Error stopping Difftastic LSP Client:', err);
     });
 }
