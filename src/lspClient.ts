@@ -52,6 +52,7 @@ export function startLSP(subscriptions: Disposable[]) {
 
   // --- Client Options ---
   // These define how the client behaves and what it expects from the server.
+  // const clientOptions: LanguageClientOptions = {
   // They remain largely the same regardless of the server's implementation language.
   const clientOptions: LanguageClientOptions = {
     // Register the server for 'mylang' documents
@@ -77,7 +78,7 @@ export function startLSP(subscriptions: Disposable[]) {
   // --- Create and Start the Client ---
   try {
     client = new LanguageClientCustom(
-      'difftastic-lsp-client', // Unique ID for the client instance
+      'DifftasticLspClient', // Unique ID for the client instance
       'Difftastic LSP Client', // Name shown in VS Code's Output panel
       serverOptions,
       clientOptions,
