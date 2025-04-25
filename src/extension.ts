@@ -29,6 +29,7 @@ import {
   getCommitSubject,
 } from './blameLineHighlight';
 import type { TypescriptExplicitTypesSettings } from './types/types';
+import { DidOpenTextDocumentCustomNotificationType } from './types/types';
 import { inspect } from 'node:util';
 import { startLSP } from './lspClient';
 
@@ -153,6 +154,8 @@ export function activate({ subscriptions }: ExtensionContext) {
     }),
   );
 
+  const client = startLSP(subscriptions);
+
   setTimeout(() => {
     for (const visibleEditor of window.visibleTextEditors) {
       const visibleEditorDocument = visibleEditor.document;
@@ -165,6 +168,16 @@ export function activate({ subscriptions }: ExtensionContext) {
           visibleEditorDocument,
           visibleEditorDocument.fileName,
         );
+        if (client) {
+          void client.sendNotification(DidOpenTextDocumentCustomNotificationType, {
+            textDocument: {
+              uri: visibleEditorDocument.uri.toString(),
+              languageId: visibleEditorDocument.languageId,
+              version: 1,
+              text: '',
+            },
+          });
+        }
       }
     }
   }, 4000);
@@ -172,8 +185,6 @@ export function activate({ subscriptions }: ExtensionContext) {
   // setTimeout(() => {
   //   enableGitExtensionFunctionality(subscriptions);
   // }, 4000);
-
-  startLSP(subscriptions);
 
   outputChannel.appendLine('Extension activated.'); // Initial activation log
   // window.showInformationMessage('Hello World from Your Extension!', {

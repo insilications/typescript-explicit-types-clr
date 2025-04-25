@@ -10,7 +10,7 @@ import * as path from 'node:path';
 import {
   LanguageClient,
   TransportKind, // We'll likely use stdio
-  RevealOutputChannelOn,
+  // RevealOutputChannelOn,
 } from 'vscode-languageclient/node';
 import type {
   LanguageClientOptions,
@@ -38,7 +38,7 @@ class LanguageClientCustom extends LanguageClient {
 
 let client: LanguageClientCustom | undefined;
 
-export function startLSP(subscriptions: Disposable[]) {
+export function startLSP(subscriptions: Disposable[]): LanguageClientCustom | undefined {
   // --- Server Options ---
   // Define how to LAUNCH the external executable
   const serverOptions: ServerOptions = {
@@ -66,26 +66,36 @@ export function startLSP(subscriptions: Disposable[]) {
     // fileEvents: workspace.createFileSystemWatcher('**/.mylang_config')
     // },
 
-    revealOutputChannelOn: RevealOutputChannelOn.Info, // Or Never, Warn, Error
+    // revealOutputChannelOn: RevealOutputChannelOn.Info, // Or Never, Warn, Error
 
     // You might need to set initializationOptions if your Rust server
     // expects specific custom parameters during the 'initialize' request.
     // initializationOptions: {
     //    someCustomSetting: "value"
     // }
-    middleware: {
-      didOpen: async (document, next) => {
-        for (const visibleEditor of window.visibleTextEditors) {
-          const visibleEditorDocument = visibleEditor.document;
-          if (visibleEditorDocument.uri.scheme === 'file') {
-            if (document.fileName == visibleEditorDocument.fileName) {
-              return next(document);
-            }
-          }
-        }
-        return;
-      },
-    },
+
+    // middleware: {
+    //   didOpen: async (document, next) => {
+    //     outputChannel!.debug(`0 - middleware didOpen - document.fileName: ${document.fileName}`);
+    //     for (const visibleEditor of window.visibleTextEditors) {
+    //       const visibleEditorDocument = visibleEditor.document;
+    //       outputChannel!.debug(
+    //         `1 - middleware didOpen - visibleEditorDocument.fileName: ${visibleEditorDocument.fileName}`,
+    //       );
+    //       if (visibleEditorDocument.uri.scheme === 'file') {
+    //         outputChannel!.debug(
+    //           `2 - middleware didOpen - visibleEditorDocument.fileName: ${visibleEditorDocument.fileName}`,
+    //         );
+    //         if (document.fileName == visibleEditorDocument.fileName) {
+    //           outputChannel!.debug(`3 - middleware didOpen - send: ${document.fileName}`);
+    //           return next(document);
+    //         }
+    //       }
+    //     }
+    //     return;
+    //   },
+    // },
+    // textSynchronization: { delayOpenNotifications: true },
   };
 
   // --- Create and Start the Client ---
@@ -126,6 +136,7 @@ export function startLSP(subscriptions: Disposable[]) {
   });
 
   console.log('Difftastic LSP Client extension activation finished.');
+  return client;
 }
 
 export function deactivate(): Thenable<void> | undefined {

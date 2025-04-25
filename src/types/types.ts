@@ -1,3 +1,8 @@
+import { NotificationType, DidOpenTextDocumentParams } from 'vscode-languageserver-protocol';
+
+export const DidOpenTextDocumentCustomNotificationType =
+  new NotificationType<DidOpenTextDocumentParams>('textDocument/didOpenCustom');
+
 export interface EditorCacheData {
   debounceTimer: NodeJS.Timeout;
 }
