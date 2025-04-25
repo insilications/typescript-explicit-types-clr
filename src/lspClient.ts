@@ -73,6 +73,19 @@ export function startLSP(subscriptions: Disposable[]) {
     // initializationOptions: {
     //    someCustomSetting: "value"
     // }
+    middleware: {
+      didOpen: async (document, next) => {
+        for (const visibleEditor of window.visibleTextEditors) {
+          const visibleEditorDocument = visibleEditor.document;
+          if (visibleEditorDocument.uri.scheme === 'file') {
+            if (document.fileName == visibleEditorDocument.fileName) {
+              return next(document);
+            }
+          }
+        }
+        return;
+      },
+    },
   };
 
   // --- Create and Start the Client ---
