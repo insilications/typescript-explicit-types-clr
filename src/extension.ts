@@ -28,10 +28,16 @@ import {
   triggerUpdateDecorationsDebounce,
   getCommitSubject,
 } from './blameLineHighlight';
-import type { TypescriptExplicitTypesSettings } from './types/types';
-import { didOpenTextDocumentCustomNotificationType } from './types/types';
+import type {
+  TypescriptExplicitTypesSettings,
+  DidOpenTextDocumentCustomRequestResponse,
+  DidOpenTextDocumentCustomRequestParams,
+  DidOpenTextDocumentCustomRequestItem,
+} from './types/types';
+import { didOpenTextDocumentCustomRequestType } from './types/types';
 import { inspect } from 'node:util';
 import { startLSP } from './lspClient';
+import type { LanguageClientCustom } from './lspClient';
 
 export let outputChannel: LogOutputChannel | undefined;
 
@@ -54,7 +60,7 @@ const repositoryStateListeners = new Map<Uri, Disposable>();
 let myStatusBarItem: StatusBarItem;
 let typescriptExplicitTypesSettings: WorkspaceConfiguration & TypescriptExplicitTypesSettings;
 
-export function activate({ subscriptions }: ExtensionContext) {
+export async function activate({ subscriptions }: ExtensionContext): Promise<void> {
   // Create a custom channel for logging
   outputChannel = window.createOutputChannel('typescriptExplicitTypes', { log: true });
   getAllTypescriptExplicitTypesSetting();
@@ -137,7 +143,7 @@ export function activate({ subscriptions }: ExtensionContext) {
           const visibleEditorDocument = visibleEditor.document;
           const visibleEditorDocumentFileName = visibleEditorDocument.fileName;
           outputChannel!.debug(
-            `0 - onDidSaveTextDocument - PORRA: ${visibleEditorDocumentFileName}`,
+            `0 - onDidSaveTextDocument - visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
           );
           if (eventFileName == visibleEditorDocumentFileName) {
             outputChannel!.debug(
@@ -154,23 +160,25 @@ export function activate({ subscriptions }: ExtensionContext) {
     }),
   );
 
-  const client = startLSP(subscriptions);
+  const client: LanguageClientCustom | undefined = await startLSP(subscriptions);
+  if (client) {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    setTimeout(async () => {
+      for (const visibleEditor of window.visibleTextEditors) {
+        const visibleEditorDocument = visibleEditor.document;
+        if (visibleEditorDocument.uri.scheme === 'file') {
+          const visibleEditorDocumentFileName = visibleEditorDocument.fileName;
+          outputChannel!.debug(
+            `Calling triggerUpdateDecorationsNow for visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
+          );
+          void triggerUpdateDecorationsNow(
+            visibleEditor,
+            visibleEditorDocument,
+            visibleEditorDocumentFileName,
+          );
 
-  setTimeout(() => {
-    for (const visibleEditor of window.visibleTextEditors) {
-      const visibleEditorDocument = visibleEditor.document;
-      if (visibleEditorDocument.uri.scheme === 'file') {
-        const visibleEditorDocumentFileName = visibleEditorDocument.fileName;
-        outputChannel!.debug(
-          `Calling triggerUpdateDecorationsNow for visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
-        );
-        void triggerUpdateDecorationsNow(
-          visibleEditor,
-          visibleEditorDocument,
-          visibleEditorDocumentFileName,
-        );
-        if (client) {
-          void client.sendNotification(didOpenTextDocumentCustomNotificationType, {
+          const result = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
+            rev: 'HEAD~1',
             textDocument: {
               uri: visibleEditorDocumentFileName,
               languageId: visibleEditorDocument.languageId,
@@ -178,16 +186,32 @@ export function activate({ subscriptions }: ExtensionContext) {
           });
         }
       }
-    }
-  }, 4000);
 
-  // setTimeout(() => {
-  //   enableGitExtensionFunctionality(subscriptions);
-  // }, 4000);
+      subscriptions.push(
+        workspace.onDidOpenTextDocument(async (event: TextDocument) => {
+          if (event.uri.scheme === 'file') {
+            const eventFileName = event.fileName;
+            outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
+            const result = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
+              rev: 'HEAD~1',
+              textDocument: {
+                uri: eventFileName,
+                languageId: event.languageId,
+              },
+            });
+          }
+        }),
+      );
+    }, 4000);
 
-  outputChannel.appendLine('Extension activated.'); // Initial activation log
-  // window.showInformationMessage('Hello World from Your Extension!', {
-  // });
+    // setTimeout(() => {
+    //   enableGitExtensionFunctionality(subscriptions);
+    // }, 4000);
+
+    outputChannel.appendLine('Extension activated.'); // Initial activation log
+    // window.showInformationMessage('Hello World from Your Extension!', {
+    // });
+  }
 }
 
 export function deactivate() {

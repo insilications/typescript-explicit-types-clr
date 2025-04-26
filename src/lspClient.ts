@@ -19,7 +19,7 @@ const LSP_ARGS: string[] = [
   '--lsp',
 ];
 
-class LanguageClientCustom extends LanguageClient {
+export class LanguageClientCustom extends LanguageClient {
   protected override fillInitializeParams(params: InitializeParams): void {
     params.capabilities.experimental = {
       diff: true,
@@ -131,7 +131,7 @@ export function deactivate(): Thenable<void> | undefined {
     .then(() => {
       outputChannel!.info('Difftastic LSP Client stopped.');
     })
-    .catch((err) => {
+    .catch((err: unknown) => {
       outputChannel!.error('Error stopping Difftastic LSP Client:', err);
     });
 }

@@ -1,9 +1,20 @@
-import { NotificationType } from 'vscode-languageserver-protocol';
+import { RequestType } from 'vscode-languageserver-protocol';
+import type { Range } from 'vscode-languageclient/node';
 
-export const didOpenTextDocumentCustomNotificationType =
-  new NotificationType<DidOpenTextDocumentCustomNotificationParams>('textDocument/didOpenCustom');
+export const didOpenTextDocumentCustomRequestType = new RequestType<
+  DidOpenTextDocumentCustomRequestParams,
+  DidOpenTextDocumentCustomRequestResponse,
+  void
+>('textDocument/didOpenCustom');
 
-export interface DidOpenTextDocumentCustomNotificationItem {
+//   export const GetMyCustomDataRequest = new RequestType<
+//   MyCustomDataParams,
+//   MyCustomDataResult,
+//   MyCustomErrorData, // Use void here if you don't expect specific error data
+//   void
+// >('myExtension/getCustomData');
+
+export interface DidOpenTextDocumentCustomRequestItem {
   /**
    * The text document's uri.
    */
@@ -14,12 +25,38 @@ export interface DidOpenTextDocumentCustomNotificationItem {
   languageId: string;
 }
 
-export interface DidOpenTextDocumentCustomNotificationParams {
+export interface DidOpenTextDocumentCustomRequestParams {
+  rev: string;
   /**
    * The document that was opened.
    */
-  textDocument: DidOpenTextDocumentCustomNotificationItem;
+  textDocument: DidOpenTextDocumentCustomRequestItem;
 }
+
+export interface DidOpenTextDocumentCustomRequestResponse {
+  ranges: Range[];
+}
+
+// export const didOpenTextDocumentCustomNotificationType =
+//   new NotificationType<DidOpenTextDocumentCustomNotificationParams>('textDocument/didOpenCustom');
+
+// export interface DidOpenTextDocumentCustomNotificationItem {
+//   /**
+//    * The text document's uri.
+//    */
+//   uri: string;
+//   /**
+//    * The text document's language identifier.
+//    */
+//   languageId: string;
+// }
+
+// export interface DidOpenTextDocumentCustomNotificationParams {
+//   /**
+//    * The document that was opened.
+//    */
+//   textDocument: DidOpenTextDocumentCustomNotificationItem;
+// }
 
 export interface EditorCacheData {
   debounceTimer: NodeJS.Timeout;
