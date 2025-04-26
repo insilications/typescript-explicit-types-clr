@@ -210,8 +210,8 @@
   "devDependencies": {
     "@eslint/js": "^9.25.1",
     "@types/lodash.uniqwith": "^4.5.9",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^22.14.1",
+    "@types/mocha": "10.0.10",
+    "@types/node": "22.15.2",
     "@types/vscode": "^1.99.1",
     "@typescript-eslint/eslint-plugin": "^8.31.0",
     "@typescript-eslint/parser": "^8.31.0",
@@ -219,16 +219,15 @@
     "@vscode/test-electron": "^2.5.2",
     "ajv": "^8.17.1",
     "eslint": "^9.25.1",
-    "glob": "^11.0.1",
+    "glob": "11.0.2",
     "globals": "^16.0.0",
-    "mocha": "^11.1.0",
+    "mocha": "11.2.2",
+    "prettier": "^3.5.3",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.0",
-    "vscode-test": "^1.6.1",
-    "webpack": "^5.99.6",
-    "webpack-cli": "^6.0.1",
-    "prettier": "^3.5.3"
+    "webpack": "5.99.7",
+    "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "lodash.uniqwith": "^4.5.0",
