@@ -7,7 +7,7 @@ import {
 } from './extension';
 import { spawn } from 'node:child_process';
 import { dirname } from 'node:path';
-import type { difftasticJsonOutput, EditorCacheData } from './types/types';
+import type { DifftasticJsonOutput, EditorCacheData } from './types/types';
 
 const GIT_BINARY_NAME = 'git';
 const GIT_DIFFTOOL_ARGS: string[] = [
@@ -171,7 +171,7 @@ async function getRangesFromBinary(fileName: string): Promise<Range[]> {
           return;
         }
 
-        const outputJson = JSON.parse(stdoutData) as difftasticJsonOutput;
+        const outputJson = JSON.parse(stdoutData) as DifftasticJsonOutput;
         const ranges: Range[] = [];
 
         // JSON Parsing and Range Mapping

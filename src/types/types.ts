@@ -1,7 +1,25 @@
-import { NotificationType, DidOpenTextDocumentParams } from 'vscode-languageserver-protocol';
+import { NotificationType } from 'vscode-languageserver-protocol';
 
-export const DidOpenTextDocumentCustomNotificationType =
-  new NotificationType<DidOpenTextDocumentParams>('textDocument/didOpenCustom');
+export const didOpenTextDocumentCustomNotificationType =
+  new NotificationType<DidOpenTextDocumentCustomNotificationParams>('textDocument/didOpenCustom');
+
+export interface DidOpenTextDocumentCustomNotificationItem {
+  /**
+   * The text document's uri.
+   */
+  uri: string;
+  /**
+   * The text document's language identifier.
+   */
+  languageId: string;
+}
+
+export interface DidOpenTextDocumentCustomNotificationParams {
+  /**
+   * The document that was opened.
+   */
+  textDocument: DidOpenTextDocumentCustomNotificationItem;
+}
 
 export interface EditorCacheData {
   debounceTimer: NodeJS.Timeout;
@@ -14,7 +32,7 @@ export const highlight = {
 
 export type HighlightType = (typeof highlight)[keyof typeof highlight];
 
-export interface difftasticJsonOutput {
+export interface DifftasticJsonOutput {
   readonly chunks: Chunk[][];
   readonly language: string;
   readonly path: string;

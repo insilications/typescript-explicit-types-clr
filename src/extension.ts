@@ -29,7 +29,7 @@ import {
   getCommitSubject,
 } from './blameLineHighlight';
 import type { TypescriptExplicitTypesSettings } from './types/types';
-import { DidOpenTextDocumentCustomNotificationType } from './types/types';
+import { didOpenTextDocumentCustomNotificationType } from './types/types';
 import { inspect } from 'node:util';
 import { startLSP } from './lspClient';
 
@@ -160,21 +160,20 @@ export function activate({ subscriptions }: ExtensionContext) {
     for (const visibleEditor of window.visibleTextEditors) {
       const visibleEditorDocument = visibleEditor.document;
       if (visibleEditorDocument.uri.scheme === 'file') {
+        const visibleEditorDocumentFileName = visibleEditorDocument.fileName;
         outputChannel!.debug(
-          `Calling triggerUpdateDecorationsNow for visibleEditorDocument.fileName: ${visibleEditorDocument.fileName}`,
+          `Calling triggerUpdateDecorationsNow for visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
         );
         void triggerUpdateDecorationsNow(
           visibleEditor,
           visibleEditorDocument,
-          visibleEditorDocument.fileName,
+          visibleEditorDocumentFileName,
         );
         if (client) {
-          void client.sendNotification(DidOpenTextDocumentCustomNotificationType, {
+          void client.sendNotification(didOpenTextDocumentCustomNotificationType, {
             textDocument: {
-              uri: visibleEditorDocument.uri.toString(),
+              uri: visibleEditorDocumentFileName,
               languageId: visibleEditorDocument.languageId,
-              version: 1,
-              text: '',
             },
           });
         }

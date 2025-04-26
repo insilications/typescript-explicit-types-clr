@@ -1,17 +1,9 @@
-import { Range, window } from 'vscode';
-import type { TextEditor, TextDocument, ExtensionContext, Disposable } from 'vscode';
-import {
-  outputChannel,
-  textEditorHighlightStyles,
-  BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING,
-} from './extension';
-import { spawn } from 'node:child_process';
-import * as path from 'node:path';
-import {
-  LanguageClient,
-  TransportKind, // We'll likely use stdio
-  // RevealOutputChannelOn,
-} from 'vscode-languageclient/node';
+import type { Disposable } from 'vscode';
+import { outputChannel } from './extension';
+// import { spawn } from 'node:child_process';
+// import * as path from 'node:path';
+import { LanguageClient, TransportKind } from 'vscode-languageclient/node';
+
 import type {
   LanguageClientOptions,
   ServerOptions,
@@ -38,9 +30,9 @@ class LanguageClientCustom extends LanguageClient {
 
 let client: LanguageClientCustom | undefined;
 
-export function startLSP(subscriptions: Disposable[]): LanguageClientCustom | undefined {
-  // --- Server Options ---
-  // Define how to LAUNCH the external executable
+export async function startLSP(
+  subscriptions: Disposable[],
+): Promise<LanguageClientCustom | undefined> {
   const serverOptions: ServerOptions = {
     command: LSP_BINARY_NAME, // The command (path to executable)
     args: LSP_ARGS, // Arguments to pass to the command
@@ -50,10 +42,6 @@ export function startLSP(subscriptions: Disposable[]): LanguageClientCustom | un
     // }
   };
 
-  // --- Client Options ---
-  // These define how the client behaves and what it expects from the server.
-  // const clientOptions: LanguageClientOptions = {
-  // They remain largely the same regardless of the server's implementation language.
   const clientOptions: LanguageClientOptions = {
     // Register the server for 'mylang' documents
     // documentSelector: [{ scheme: 'file', language: 'mylang' }],
@@ -98,7 +86,6 @@ export function startLSP(subscriptions: Disposable[]): LanguageClientCustom | un
     // textSynchronization: { delayOpenNotifications: true },
   };
 
-  // --- Create and Start the Client ---
   try {
     client = new LanguageClientCustom(
       'DifftasticLspClient', // Unique ID for the client instance
@@ -108,53 +95,43 @@ export function startLSP(subscriptions: Disposable[]): LanguageClientCustom | un
     );
 
     // Start the client. This will execute the `serverCommandPath` process.
-    console.log(`Starting LSP Server: ${LSP_BINARY_NAME} ${LSP_ARGS.join(' ')}`);
-    client
-      .start()
-      .then(() => {
-        console.log('Difftastic LSP Client started successfully.');
-        // Optional: Add listener for configuration changes after the client is ready
-        // (Same as before, if needed)
-      })
-      .catch((error) => {
-        // Provide more specific feedback if possible
-        window.showErrorMessage(
-          `Failed to start Difftastic LSP Server: ${error}. Ensure the executable exists, has execute permissions, and starts correctly.`,
-        );
-        console.error('Failed to start Difftastic LSP Client:', error);
-      });
+    outputChannel!.info(`Starting LSP Server: ${LSP_BINARY_NAME} ${LSP_ARGS.join(' ')}`);
+    await client.start();
+
+    // Ensure the client is stopped when the extension is deactivated
+    subscriptions.push({
+      dispose: () => {
+        deactivate();
+      },
+    });
+
+    outputChannel!.info('Difftastic LSP Client started successfully.');
+    return client;
   } catch (error) {
-    window.showErrorMessage(`Error creating Difftastic LSP Server: ${error}`);
-    console.error('Error creating Difftastic LSP Client:', error);
+    outputChannel!.error(
+      'Failed to start Difftastic LSP Client. Ensure the `difft` executable exists, has execute permissions, and starts correctly.:',
+      error,
+    );
+    return undefined;
   }
-
-  // Ensure the client is stopped when the extension is deactivated
-  subscriptions.push({
-    dispose: () => {
-      deactivate();
-    },
-  });
-
-  console.log('Difftastic LSP Client extension activation finished.');
-  return client;
 }
 
 export function deactivate(): Thenable<void> | undefined {
-  console.log('Deactivating Difftastic LSP Client...');
+  outputChannel!.info('Deactivating Difftastic LSP Client...');
   if (!client) {
-    console.log('Difftastic LSP Client not active.');
+    outputChannel!.info('Difftastic LSP Client not active.');
     return undefined;
   }
   // client.stop() will send 'shutdown' and 'exit' notifications to the server
   // and terminate the process if it doesn't exit gracefully.
   const stopPromise = client.stop();
   client = undefined; // Clear the reference
-  console.log('Difftastic LSP Client stopping...');
+  outputChannel!.info('Difftastic LSP Client stopping...');
   return stopPromise
     .then(() => {
-      console.log('Difftastic LSP Client stopped.');
+      outputChannel!.info('Difftastic LSP Client stopped.');
     })
     .catch((err) => {
-      console.error('Error stopping Difftastic LSP Client:', err);
+      outputChannel!.error('Error stopping Difftastic LSP Client:', err);
     });
 }
