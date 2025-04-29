@@ -1,5 +1,6 @@
 import { RequestType } from 'vscode-languageserver-protocol';
-import type { Range } from 'vscode-languageclient/node';
+// import type { Range } from 'vscode-languageclient/node';
+import type { Range } from 'vscode';
 
 export const didOpenTextDocumentCustomRequestType = new RequestType<
   DidOpenTextDocumentCustomRequestParams,

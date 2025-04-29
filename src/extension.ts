@@ -24,7 +24,7 @@ import { GenereateTypeProvider } from './actionProvider';
 import { commandHandler, commandId, toogleQuotesCommandId, toggleQuotes } from './command';
 import type { GitExtension, API as GitAPI, Repository } from './types/git';
 import {
-  triggerUpdateDecorationsNow,
+  updateDecorations2,
   triggerUpdateDecorationsDebounce,
   getCommitSubject,
 } from './blameLineHighlight';
@@ -105,35 +105,35 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
     subscriptions.push(myStatusBarItem);
   }
 
-  subscriptions.push(
-    window.onDidChangeActiveTextEditor(async (editor) => {
-      if (editor) {
-        const editorDocument: TextDocument = editor.document;
-        if (editorDocument.uri.scheme === 'file') {
-          const editorDocumentFileName = editorDocument.fileName;
-          outputChannel!.debug(
-            `0 - onDidChangeActiveTextEditor - editorDocumentFileName: ${editorDocumentFileName}`,
-          );
-          void triggerUpdateDecorationsNow(editor, editorDocument, editorDocumentFileName);
+  // subscriptions.push(
+  //   window.onDidChangeActiveTextEditor(async (editor) => {
+  //     if (editor) {
+  //       const editorDocument: TextDocument = editor.document;
+  //       if (editorDocument.uri.scheme === 'file') {
+  //         const editorDocumentFileName = editorDocument.fileName;
+  //         outputChannel!.debug(
+  //           `0 - onDidChangeActiveTextEditor - editorDocumentFileName: ${editorDocumentFileName}`,
+  //         );
+  //         void triggerUpdateDecorationsNow(editor, editorDocument, editorDocumentFileName);
 
-          if (typescriptExplicitTypesSettings.blameHighlightingShowStatus) {
-            try {
-              const subject = await getCommitSubject(
-                BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING,
-                editorDocumentFileName,
-              );
-              myStatusBarItem.text = `${BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING}: ${subject}`;
-              myStatusBarItem.show();
-            } catch (error: unknown) {
-              myStatusBarItem.hide();
-              outputChannel!.error(`getCommitSubject for ${editorDocumentFileName} failed:`, error);
-              outputChannel!.show();
-            }
-          }
-        }
-      }
-    }),
-  );
+  //         if (typescriptExplicitTypesSettings.blameHighlightingShowStatus) {
+  //           try {
+  //             const subject = await getCommitSubject(
+  //               BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING,
+  //               editorDocumentFileName,
+  //             );
+  //             myStatusBarItem.text = `${BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING}: ${subject}`;
+  //             myStatusBarItem.show();
+  //           } catch (error: unknown) {
+  //             myStatusBarItem.hide();
+  //             outputChannel!.error(`getCommitSubject for ${editorDocumentFileName} failed:`, error);
+  //             outputChannel!.show();
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }),
+  // );
 
   subscriptions.push(
     workspace.onDidSaveTextDocument((event: TextDocument) => {
@@ -171,26 +171,28 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
           outputChannel!.debug(
             `Calling triggerUpdateDecorationsNow for visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
           );
-          void triggerUpdateDecorationsNow(
-            visibleEditor,
-            visibleEditorDocument,
-            visibleEditorDocumentFileName,
-          );
+          // void triggerUpdateDecorationsNow(
+          //   visibleEditor,
+          //   visibleEditorDocument,
+          //   visibleEditorDocumentFileName,
+          // );
 
-          const result = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
+          const response = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
             rev: 'HEAD~1',
             textDocument: {
               uri: visibleEditorDocumentFileName,
               languageId: visibleEditorDocument.languageId,
             },
           });
-
-          let serializedRanges = '[';
-          for (const range of result.ranges) {
-            serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
+          if (!visibleEditorDocument.isClosed) {
+            updateDecorations2(visibleEditor, visibleEditorDocumentFileName, response.ranges);
           }
-          serializedRanges += ']';
-          outputChannel!.info(`window.visibleTextEditors: ${serializedRanges}`);
+          // let serializedRanges = '[';
+          // for (const range of result.ranges) {
+          //   serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
+          // }
+          // serializedRanges += ']';
+          // outputChannel!.info(`window.visibleTextEditors: ${serializedRanges}`);
         }
       }
 

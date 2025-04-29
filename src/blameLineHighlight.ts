@@ -229,6 +229,25 @@ export async function updateDecorations(editor: TextEditor, fileName: string) {
   }
 }
 
+export function updateDecorations2(editor: TextEditor, fileName: string, ranges: Range[]) {
+  // Clear existing decorations before starting
+  // editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+  // outputChannel!.debug(
+  //   `0 - updateDecorations2 - Cleared existing decorations - fileName: ${fileName}`,
+  // );
+
+  try {
+    if (ranges.length > 0) {
+      editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
+      outputChannel!.debug(`0 - updateDecorations2 - Decorations set for fileName: ${fileName}`);
+    }
+  } catch (error: unknown) {
+    editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+    outputChannel!.error(`1 - updateDecorations2 - setDecorations failed for ${fileName}:`, error); // Log errors
+    outputChannel!.show();
+  }
+}
+
 export async function triggerUpdateDecorationsNow(
   editor: TextEditor,
   editorDocument: TextDocument,
