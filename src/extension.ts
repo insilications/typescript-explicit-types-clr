@@ -135,27 +135,36 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
   //   }),
   // );
 
+  // subscriptions.push(
+  //   workspace.onDidSaveTextDocument((event: TextDocument) => {
+  //     if (event.uri.scheme === 'file') {
+  //       const eventFileName = event.fileName;
+  //       for (const visibleEditor of window.visibleTextEditors) {
+  //         const visibleEditorDocument = visibleEditor.document;
+  //         const visibleEditorDocumentFileName = visibleEditorDocument.fileName;
+  //         outputChannel!.debug(
+  //           `0 - onDidSaveTextDocument - visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
+  //         );
+  //         if (eventFileName == visibleEditorDocumentFileName) {
+  //           outputChannel!.debug(
+  //             `1 - onDidSaveTextDocument - visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
+  //           );
+  //           triggerUpdateDecorationsDebounce(
+  //             visibleEditor,
+  //             visibleEditorDocument,
+  //             visibleEditorDocumentFileName,
+  //           );
+  //         }
+  //       }
+  //     }
+  //   }),
+  // );
+
   subscriptions.push(
-    workspace.onDidSaveTextDocument((event: TextDocument) => {
+    workspace.onDidOpenTextDocument((event: TextDocument) => {
       if (event.uri.scheme === 'file') {
         const eventFileName = event.fileName;
-        for (const visibleEditor of window.visibleTextEditors) {
-          const visibleEditorDocument = visibleEditor.document;
-          const visibleEditorDocumentFileName = visibleEditorDocument.fileName;
-          outputChannel!.debug(
-            `0 - onDidSaveTextDocument - visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
-          );
-          if (eventFileName == visibleEditorDocumentFileName) {
-            outputChannel!.debug(
-              `1 - onDidSaveTextDocument - visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
-            );
-            triggerUpdateDecorationsDebounce(
-              visibleEditor,
-              visibleEditorDocument,
-              visibleEditorDocumentFileName,
-            );
-          }
-        }
+        outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
       }
     }),
   );
@@ -196,28 +205,28 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
         }
       }
 
-      subscriptions.push(
-        workspace.onDidOpenTextDocument(async (event: TextDocument) => {
-          if (event.uri.scheme === 'file') {
-            const eventFileName = event.fileName;
-            outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
-            const result = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
-              rev: 'HEAD~1',
-              textDocument: {
-                uri: eventFileName,
-                languageId: event.languageId,
-              },
-            });
+      // subscriptions.push(
+      //   workspace.onDidOpenTextDocument(async (event: TextDocument) => {
+      //     if (event.uri.scheme === 'file') {
+      //       const eventFileName = event.fileName;
+      //       outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
+      //       const result = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
+      //         rev: 'HEAD~1',
+      //         textDocument: {
+      //           uri: eventFileName,
+      //           languageId: event.languageId,
+      //         },
+      //       });
 
-            let serializedRanges = '[';
-            for (const range of result.ranges) {
-              serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
-            }
-            serializedRanges += ']';
-            outputChannel!.info(`onDidOpenTextDocument: ${serializedRanges}`);
-          }
-        }),
-      );
+      //       let serializedRanges = '[';
+      //       for (const range of result.ranges) {
+      //         serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
+      //       }
+      //       serializedRanges += ']';
+      //       outputChannel!.info(`onDidOpenTextDocument: ${serializedRanges}`);
+      //     }
+      //   }),
+      // );
     }, 4000);
 
     // setTimeout(() => {
