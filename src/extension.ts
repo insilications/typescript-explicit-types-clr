@@ -184,6 +184,13 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
               languageId: visibleEditorDocument.languageId,
             },
           });
+
+          let serializedRanges = '[';
+          for (const range of result.ranges) {
+            serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
+          }
+          serializedRanges += ']';
+          outputChannel!.info(`window.visibleTextEditors: ${serializedRanges}`);
         }
       }
 
@@ -199,6 +206,13 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
                 languageId: event.languageId,
               },
             });
+
+            let serializedRanges = '[';
+            for (const range of result.ranges) {
+              serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
+            }
+            serializedRanges += ']';
+            outputChannel!.info(`onDidOpenTextDocument: ${serializedRanges}`);
           }
         }),
       );

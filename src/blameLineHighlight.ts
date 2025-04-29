@@ -211,12 +211,12 @@ export async function updateDecorations(editor: TextEditor, fileName: string) {
   try {
     const ranges: Range[] = await getRangesFromBinary(fileName);
 
-    // let serializedRanges = '[';
-    // for (const range of ranges) {
-    //   serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
-    // }
-    // serializedRanges += ']';
-    // outputChannel!.info(serializedRanges);
+    let serializedRanges = '[';
+    for (const range of ranges) {
+      serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
+    }
+    serializedRanges += ']';
+    outputChannel!.info(`updateDecorations: ${serializedRanges}`);
 
     if (ranges.length > 0) {
       editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
