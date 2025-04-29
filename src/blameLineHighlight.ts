@@ -8,6 +8,7 @@ import {
 import { spawn } from 'node:child_process';
 import { dirname } from 'node:path';
 import type { DifftasticJsonOutput, EditorCacheData } from './types/types';
+import { inspect } from 'node:util';
 
 const GIT_BINARY_NAME = 'git';
 const GIT_DIFFTOOL_ARGS: string[] = [
@@ -210,6 +211,7 @@ export async function updateDecorations(editor: TextEditor, fileName: string) {
 
   try {
     const ranges: Range[] = await getRangesFromBinary(fileName);
+    outputChannel!.info(inspect(ranges, { depth: null, colors: false }));
     if (ranges.length > 0) {
       editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
       outputChannel!.debug(`Decorations set for fileName: ${fileName}`);

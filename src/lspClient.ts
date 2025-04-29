@@ -37,12 +37,12 @@ export async function startLSP(
     command: LSP_BINARY_NAME, // The command (path to executable)
     args: LSP_ARGS, // Arguments to pass to the command
     transport: TransportKind.stdio, // Use standard input/output for communication
-    options: {
-      // cwd: undefined, // Current working directory for the server process
-      detached: false, // Whether to run the server in a detached process
-      shell: false, // Whether to use a shell to execute the command
-      //    env: { ... } // Optional: Set environment variables for the server process
-    },
+    // options: {
+    // cwd: undefined, // Current working directory for the server process
+    // detached: false, // Whether to run the server in a detached process
+    // shell: false, // Whether to use a shell to execute the command
+    //    env: { ... } // Optional: Set environment variables for the server process
+    // },
   };
 
   const clientOptions: LanguageClientOptions = {
