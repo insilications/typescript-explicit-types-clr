@@ -65,14 +65,37 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
   outputChannel = window.createOutputChannel('typescriptExplicitTypes', { log: true });
   getAllTypescriptExplicitTypesSetting();
 
-  subscriptions.push(
-    workspace.onDidOpenTextDocument((event: TextDocument) => {
-      // if (event.uri.scheme === 'file') {
-      const eventFileName = event.fileName;
-      outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
-      // }
-    }),
-  );
+  // subscriptions.push(
+  //   workspace.onDidOpenTextDocument((event: TextDocument) => {
+  //     // if (event.uri.scheme === 'file') {
+  //     const eventFileName = event.fileName;
+  //     outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
+  //     // }
+  //   }),
+  // );
+
+  // workspace.onDidOpenTextDocument(
+  //   (event: TextDocument) => {
+  //     if (event.uri.scheme === 'file') {
+  //       const eventFileName = event.fileName;
+  //       outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
+  //     }
+  //   },
+  //   null,
+  //   subscriptions,
+  // );
+
+  // window.onDidChangeActiveTextEditor(
+  //   (editor) => {
+  //     if (editor) {
+  //       outputChannel!.debug(
+  //         `0 - onDidChangeActiveTextEditor - eventFileName: ${editor.document.fileName}`,
+  //       );
+  //     }
+  //   },
+  //   null,
+  //   subscriptions,
+  // );
 
   //    typescriptExplicitTypesSettings: {
   //   has: [Function: has],
@@ -89,30 +112,30 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
   //   logLevel: 'Debug'
   // }
 
-  // const selector: DocumentFilter[] = [];
-  // for (const language of ['typescript', 'typescriptreact', 'svelte']) {
-  // selector.push({ language, scheme: 'file' });
-  // selector.push({ language, scheme: 'untitled' });
-  // }
+  const selector: DocumentFilter[] = [];
+  for (const language of ['typescript', 'typescriptreact', 'svelte']) {
+    selector.push({ language, scheme: 'file' });
+    selector.push({ language, scheme: 'untitled' });
+  }
 
-  // const command = commands.registerCommand(commandId, commandHandler);
-  // const codeActionProvider = languages.registerCodeActionsProvider(
-  // selector,
-  // new GenereateTypeProvider(),
-  // GenereateTypeProvider.metadata,
-  // );
+  const command = commands.registerCommand(commandId, commandHandler);
+  const codeActionProvider = languages.registerCodeActionsProvider(
+    selector,
+    new GenereateTypeProvider(),
+    GenereateTypeProvider.metadata,
+  );
 
-  // const toggleQuotesCommand = commands.registerCommand(toogleQuotesCommandId, toggleQuotes);
+  const toggleQuotesCommand = commands.registerCommand(toogleQuotesCommandId, toggleQuotes);
 
-  // subscriptions.push(command);
-  // subscriptions.push(codeActionProvider);
-  // subscriptions.push(toggleQuotesCommand);
-  // subscriptions.push(textEditorHighlightStyles.latestHighlight);
+  subscriptions.push(command);
+  subscriptions.push(codeActionProvider);
+  subscriptions.push(toggleQuotesCommand);
+  subscriptions.push(textEditorHighlightStyles.latestHighlight);
 
-  // if (typescriptExplicitTypesSettings.blameHighlightingShowStatus) {
-  //   myStatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 1);
-  //   subscriptions.push(myStatusBarItem);
-  // }
+  if (typescriptExplicitTypesSettings.blameHighlightingShowStatus) {
+    myStatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 1);
+    subscriptions.push(myStatusBarItem);
+  }
 
   // subscriptions.push(
   //   window.onDidChangeActiveTextEditor(async (editor) => {
@@ -170,73 +193,73 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
   // );
 
   const client: LanguageClientCustom | undefined = await startLSP(subscriptions);
-  // if (client) {
-  //   // eslint-disable-next-line @typescript-eslint/no-misused-promises
-  //   setTimeout(async () => {
-  //     for (const visibleEditor of window.visibleTextEditors) {
-  //       const visibleEditorDocument = visibleEditor.document;
-  //       if (visibleEditorDocument.uri.scheme === 'file') {
-  //         const visibleEditorDocumentFileName = visibleEditorDocument.fileName;
-  //         outputChannel!.debug(
-  //           `Calling triggerUpdateDecorationsNow for visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
-  //         );
-  //         // void triggerUpdateDecorationsNow(
-  //         //   visibleEditor,
-  //         //   visibleEditorDocument,
-  //         //   visibleEditorDocumentFileName,
-  //         // );
+  if (client) {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    setTimeout(async () => {
+      for (const visibleEditor of window.visibleTextEditors) {
+        const visibleEditorDocument = visibleEditor.document;
+        if (visibleEditorDocument.uri.scheme === 'file') {
+          const visibleEditorDocumentFileName = visibleEditorDocument.fileName;
+          outputChannel!.debug(
+            `Calling triggerUpdateDecorationsNow for visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
+          );
+          // void triggerUpdateDecorationsNow(
+          //   visibleEditor,
+          //   visibleEditorDocument,
+          //   visibleEditorDocumentFileName,
+          // );
 
-  //         const response = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
-  //           rev: 'HEAD~1',
-  //           textDocument: {
-  //             uri: visibleEditorDocumentFileName,
-  //             languageId: visibleEditorDocument.languageId,
-  //           },
-  //         });
-  //         if (!visibleEditorDocument.isClosed) {
-  //           updateDecorations2(visibleEditor, visibleEditorDocumentFileName, response.ranges);
-  //         }
-  //         // let serializedRanges = '[';
-  //         // for (const range of result.ranges) {
-  //         //   serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
-  //         // }
-  //         // serializedRanges += ']';
-  //         // outputChannel!.info(`window.visibleTextEditors: ${serializedRanges}`);
-  //       }
-  //     }
+          const response = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
+            rev: 'HEAD~1',
+            textDocument: {
+              uri: visibleEditorDocumentFileName,
+              languageId: visibleEditorDocument.languageId,
+            },
+          });
+          if (!visibleEditorDocument.isClosed) {
+            updateDecorations2(visibleEditor, visibleEditorDocumentFileName, response.ranges);
+          }
+          // let serializedRanges = '[';
+          // for (const range of result.ranges) {
+          //   serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
+          // }
+          // serializedRanges += ']';
+          // outputChannel!.info(`window.visibleTextEditors: ${serializedRanges}`);
+        }
+      }
 
-  //     // subscriptions.push(
-  //     //   workspace.onDidOpenTextDocument(async (event: TextDocument) => {
-  //     //     if (event.uri.scheme === 'file') {
-  //     //       const eventFileName = event.fileName;
-  //     //       outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
-  //     //       const result = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
-  //     //         rev: 'HEAD~1',
-  //     //         textDocument: {
-  //     //           uri: eventFileName,
-  //     //           languageId: event.languageId,
-  //     //         },
-  //     //       });
+      // subscriptions.push(
+      //   workspace.onDidOpenTextDocument(async (event: TextDocument) => {
+      //     if (event.uri.scheme === 'file') {
+      //       const eventFileName = event.fileName;
+      //       outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
+      //       const result = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
+      //         rev: 'HEAD~1',
+      //         textDocument: {
+      //           uri: eventFileName,
+      //           languageId: event.languageId,
+      //         },
+      //       });
 
-  //     //       let serializedRanges = '[';
-  //     //       for (const range of result.ranges) {
-  //     //         serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
-  //     //       }
-  //     //       serializedRanges += ']';
-  //     //       outputChannel!.info(`onDidOpenTextDocument: ${serializedRanges}`);
-  //     //     }
-  //     //   }),
-  //     // );
-  //   }, 4000);
+      //       let serializedRanges = '[';
+      //       for (const range of result.ranges) {
+      //         serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
+      //       }
+      //       serializedRanges += ']';
+      //       outputChannel!.info(`onDidOpenTextDocument: ${serializedRanges}`);
+      //     }
+      //   }),
+      // );
+    }, 4000);
 
-  // setTimeout(() => {
-  //   enableGitExtensionFunctionality(subscriptions);
-  // }, 4000);
+    // setTimeout(() => {
+    //   enableGitExtensionFunctionality(subscriptions);
+    // }, 4000);
 
-  outputChannel.appendLine('Extension activated.'); // Initial activation log
-  // window.showInformationMessage('Hello World from Your Extension!', {
-  // });
-  // }
+    outputChannel.appendLine('Extension activated.'); // Initial activation log
+    // window.showInformationMessage('Hello World from Your Extension!', {
+    // });
+  }
 }
 
 export function deactivate() {
