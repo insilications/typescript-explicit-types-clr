@@ -62,7 +62,7 @@ let typescriptExplicitTypesSettings: WorkspaceConfiguration & TypescriptExplicit
 
 export async function activate({ subscriptions }: ExtensionContext): Promise<void> {
   // Create a custom channel for logging
-  outputChannel = window.createOutputChannel('typescriptExplicitTypes', { log: true });
+  outputChannel = window.createOutputChannel('Difftastic', { log: true });
   getAllTypescriptExplicitTypesSetting();
 
   // subscriptions.push(
@@ -112,24 +112,24 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
   //   logLevel: 'Debug'
   // }
 
-  const selector: DocumentFilter[] = [];
-  for (const language of ['typescript', 'typescriptreact', 'svelte']) {
-    selector.push({ language, scheme: 'file' });
-    selector.push({ language, scheme: 'untitled' });
-  }
+  // const selector: DocumentFilter[] = [];
+  // for (const language of ['typescript', 'typescriptreact', 'svelte']) {
+  // selector.push({ language, scheme: 'file' });
+  // selector.push({ language, scheme: 'untitled' });
+  // }
 
-  const command = commands.registerCommand(commandId, commandHandler);
-  const codeActionProvider = languages.registerCodeActionsProvider(
-    selector,
-    new GenereateTypeProvider(),
-    GenereateTypeProvider.metadata,
-  );
+  // const command = commands.registerCommand(commandId, commandHandler);
+  // const codeActionProvider = languages.registerCodeActionsProvider(
+  // selector,
+  // new GenereateTypeProvider(),
+  // GenereateTypeProvider.metadata,
+  // );
 
-  const toggleQuotesCommand = commands.registerCommand(toogleQuotesCommandId, toggleQuotes);
+  // const toggleQuotesCommand = commands.registerCommand(toogleQuotesCommandId, toggleQuotes);
 
-  subscriptions.push(command);
-  subscriptions.push(codeActionProvider);
-  subscriptions.push(toggleQuotesCommand);
+  // subscriptions.push(command);
+  // subscriptions.push(codeActionProvider);
+  // subscriptions.push(toggleQuotesCommand);
   subscriptions.push(textEditorHighlightStyles.latestHighlight);
 
   if (typescriptExplicitTypesSettings.blameHighlightingShowStatus) {
