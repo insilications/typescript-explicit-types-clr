@@ -53,7 +53,8 @@ export let BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING = 'HEAD~1';
 
 const repositoryStateListeners = new Map<Uri, Disposable>();
 let myStatusBarItem: StatusBarItem;
-let typescriptExplicitTypesSettings: WorkspaceConfiguration & TypescriptExplicitTypesSettings;
+export let typescriptExplicitTypesSettings: WorkspaceConfiguration &
+  TypescriptExplicitTypesSettings;
 
 export async function activate({ subscriptions }: ExtensionContext): Promise<void> {
   // Create a custom channel for logging
@@ -270,7 +271,10 @@ export function deactivate() {
 
 function getAllTypescriptExplicitTypesSetting() {
   typescriptExplicitTypesSettings = workspace.getConfiguration('typescriptExplicitTypes');
-  BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING = `HEAD~${typescriptExplicitTypesSettings.blameHighlightingParentLevel}`;
+  BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING = `HEAD~${typescriptExplicitTypesSettings.get<number>(
+    'blameHighlightingParentLevel',
+    1,
+  )}`;
   outputChannel!.info(
     `typescriptExplicitTypesSettings: ${inspect(typescriptExplicitTypesSettings, { depth: null, colors: false })}`,
   );

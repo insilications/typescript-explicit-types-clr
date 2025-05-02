@@ -1,8 +1,10 @@
 import type { Disposable } from 'vscode';
-import { outputChannel } from './extension';
+import { outputChannel, typescriptExplicitTypesSettings } from './extension';
 // import { spawn } from 'node:child_process';
 // import * as path from 'node:path';
 import { LanguageClient, TransportKind } from 'vscode-languageclient/node';
+import { LspErrorHandler } from './lspErrorHandler';
+import type { BlameHighlightinglogLevel } from './types/types';
 
 import type {
   LanguageClientOptions,
@@ -45,25 +47,45 @@ export async function startLSP(
     },
   };
 
-  const clientOptions: LanguageClientOptions = {
-    // Register the server for 'mylang' documents
-    // documentSelector: [{ scheme: 'file', language: 'mylang' }],
-    documentSelector: [{ scheme: 'file' }],
+  const blameHighlightingSettings = {
+    blameHighlightinglogLevel: typescriptExplicitTypesSettings.get<BlameHighlightinglogLevel>(
+      'blameHighlightinglogLevel',
+      'Info',
+    ),
+    blameHighlightingParentLevel: typescriptExplicitTypesSettings.get<number>(
+      'blameHighlightingParentLevel',
+      1,
+    ),
+    blameHighlightingShowStatus: typescriptExplicitTypesSettings.get<boolean>(
+      'blameHighlightingShowStatus',
+      false,
+    ),
+    blameHighlightingOnChange: typescriptExplicitTypesSettings.get<number>(
+      'blameHighlightingOnChange',
+      1000,
+    ),
+  };
 
-    // Synchronize workspace settings under the 'mylang' section
+  const clientOptions: LanguageClientOptions = {
+    documentSelector: [{ scheme: 'file' }],
+    errorHandler: new LspErrorHandler(typescriptExplicitTypesSettings), // Custom error handler
+    connectionOptions: {
+      maxRestartCount: 2, // Maximum number of times to restart the server
+    },
+    // // Synchronize workspace settings under the 'mylang' section
     // synchronize: {
-    // configurationSection: 'mylang',
-    // Notify the server about file changes to specific file types if needed
-    // fileEvents: workspace.createFileSystemWatcher('**/.mylang_config')
+    //   configurationSection: 'mylang',
+    //   // Notify the server about file changes to specific file types if needed
+    //   fileEvents: workspace.createFileSystemWatcher('**/.mylang_config'),
     // },
 
     // revealOutputChannelOn: RevealOutputChannelOn.Info, // Or Never, Warn, Error
 
     // You might need to set initializationOptions if your Rust server
     // expects specific custom parameters during the 'initialize' request.
-    // initializationOptions: {
-    //    someCustomSetting: "value"
-    // }
+    initializationOptions: {
+      blameHighlightingSettings,
+    },
 
     // middleware: {
     //   didOpen: async (document, next) => {
@@ -125,8 +147,7 @@ export function deactivate(): Thenable<void> | undefined {
     outputChannel!.info('Difftastic LSP Client not active.');
     return undefined;
   }
-  // client.stop() will send 'shutdown' and 'exit' notifications to the server
-  // and terminate the process if it doesn't exit gracefully.
+  // client.stop() will send 'shutdown' and 'exit' notifications to the server and terminate the process if it doesn't exit gracefully.
   const stopPromise = client.stop();
   client = undefined; // Clear the reference
   outputChannel!.info('Difftastic LSP Client stopping...');
