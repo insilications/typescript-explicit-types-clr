@@ -29,7 +29,7 @@ import {
   getCommitSubject,
 } from './blameLineHighlight';
 import type { TypescriptExplicitTypesSettings } from './types/types';
-import { didOpenTextDocumentCustomRequestType } from './types/lsp_types';
+import { didOpenTextDocumentCustomRequestType } from './types/lspTypes';
 import { inspect } from 'node:util';
 import { startLSP } from './lspClient';
 import type { LanguageClientCustom } from './lspClient';
