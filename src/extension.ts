@@ -28,13 +28,8 @@ import {
   triggerUpdateDecorationsDebounce,
   getCommitSubject,
 } from './blameLineHighlight';
-import type {
-  TypescriptExplicitTypesSettings,
-  DidOpenTextDocumentCustomRequestResponse,
-  DidOpenTextDocumentCustomRequestParams,
-  DidOpenTextDocumentCustomRequestItem,
-} from './types/types';
-import { didOpenTextDocumentCustomRequestType } from './types/types';
+import type { TypescriptExplicitTypesSettings } from './types/types';
+import { didOpenTextDocumentCustomRequestType } from './types/lsp_types';
 import { inspect } from 'node:util';
 import { startLSP } from './lspClient';
 import type { LanguageClientCustom } from './lspClient';
