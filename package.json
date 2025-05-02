@@ -70,6 +70,11 @@
           "default": true,
           "description": "Controls whether to show a toast notification when blame highlighting is changed."
         },
+        "typescriptExplicitTypes.blameHighlightingOnChange": {
+          "type": "integer",
+          "default": 1000,
+          "description": "Time in milliseconds to wait before computing blame highlighting on type. -1: disable blame highlighting on type."
+        },
         "typescriptExplicitTypes.preferable": {
           "type": "boolean",
           "default": true,

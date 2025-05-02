@@ -68,6 +68,10 @@ export interface TypescriptExplicitTypesSettings {
    */
   blameHighlightingShowToastParentLevel?: boolean;
   /**
+   * Controls the time in milliseconds to wait before computing blame highlighting on type. -1: disable blame highlighting on type.
+   */
+  blameHighlightingOnChange?: number;
+  /**
    * Mark type generation actions as preferable.
    */
   preferable?: boolean;
