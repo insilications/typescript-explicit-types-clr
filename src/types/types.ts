@@ -40,7 +40,6 @@ export const blameHighlightinglogLevelConst = {
   Info: 'Info',
   Warning: 'Warning',
   Error: 'Error',
-  None: 'None',
 } as const;
 
 export type BlameHighlightinglogLevel =
