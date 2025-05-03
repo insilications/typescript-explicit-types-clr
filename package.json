@@ -213,7 +213,7 @@
     "publish": "vsce publish"
   },
   "devDependencies": {
-    "@eslint/js": "^9.25.1",
+    "@eslint/js": "^9.26.0",
     "@types/lodash.uniqwith": "^4.5.9",
     "@types/mocha": "10.0.10",
     "@types/node": "22.15.3",
@@ -223,7 +223,7 @@
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.5.2",
     "ajv": "^8.17.1",
-    "eslint": "^9.25.1",
+    "eslint": "^9.26.0",
     "glob": "11.0.2",
     "globals": "^16.0.0",
     "mocha": "11.2.2",

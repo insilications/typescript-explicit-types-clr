@@ -47,25 +47,6 @@ export async function startLSP(
     },
   };
 
-  const blameHighlightingSettings = {
-    blameHighlightinglogLevel: typescriptExplicitTypesSettings.get<BlameHighlightinglogLevel>(
-      'blameHighlightinglogLevel',
-      'Info',
-    ),
-    blameHighlightingParentLevel: typescriptExplicitTypesSettings.get<number>(
-      'blameHighlightingParentLevel',
-      1,
-    ),
-    blameHighlightingShowStatus: typescriptExplicitTypesSettings.get<boolean>(
-      'blameHighlightingShowStatus',
-      false,
-    ),
-    blameHighlightingOnChange: typescriptExplicitTypesSettings.get<number>(
-      'blameHighlightingOnChange',
-      1000,
-    ),
-  };
-
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: 'file' }],
     errorHandler: new LspErrorHandler(typescriptExplicitTypesSettings), // Custom error handler
@@ -81,10 +62,23 @@ export async function startLSP(
 
     // revealOutputChannelOn: RevealOutputChannelOn.Info, // Or Never, Warn, Error
 
-    // You might need to set initializationOptions if your Rust server
-    // expects specific custom parameters during the 'initialize' request.
     initializationOptions: {
-      blameHighlightingSettings,
+      blameHighlightinglogLevel: typescriptExplicitTypesSettings.get<BlameHighlightinglogLevel>(
+        'blameHighlightinglogLevel',
+        'Info',
+      ),
+      blameHighlightingParentLevel: typescriptExplicitTypesSettings.get<number>(
+        'blameHighlightingParentLevel',
+        1,
+      ),
+      blameHighlightingShowStatus: typescriptExplicitTypesSettings.get<boolean>(
+        'blameHighlightingShowStatus',
+        false,
+      ),
+      blameHighlightingOnChange: typescriptExplicitTypesSettings.get<number>(
+        'blameHighlightingOnChange',
+        1000,
+      ),
     },
 
     // middleware: {
