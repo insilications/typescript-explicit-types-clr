@@ -57,7 +57,7 @@
         },
         "typescriptExplicitTypes.blameHighlightingParentLevel": {
           "type": "number",
-          "default": "1",
+          "default": 1,
           "description": "Controls how many levels up in the hierarchy above the HEAD (commit) the blame highlighting should be applied. Same as `HEAD~n` in git."
         },
         "typescriptExplicitTypes.blameHighlightingShowStatus": {
