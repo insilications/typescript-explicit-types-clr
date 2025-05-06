@@ -215,12 +215,6 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
           if (!visibleEditorDocument.isClosed) {
             updateDecorations2(visibleEditor, visibleEditorDocumentFileName, response.ranges);
           }
-          // let serializedRanges = '[';
-          // for (const range of result.ranges) {
-          //   serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
-          // }
-          // serializedRanges += ']';
-          // outputChannel!.info(`window.visibleTextEditors: ${serializedRanges}`);
         }
       }
 
