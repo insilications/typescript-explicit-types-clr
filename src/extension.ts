@@ -192,7 +192,9 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
   if (client) {
     await Promise.all(
       window.visibleTextEditors.map((editor) => {
-        outputChannel!.info(`onDidOpenTextDocument: ${editor.document.fileName}`);
+        if (editor.document.uri.scheme === 'file') {
+          outputChannel!.info(`onDidOpenTextDocument: ${editor.document.fileName}`);
+        }
       }),
     );
 
