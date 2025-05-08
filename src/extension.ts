@@ -190,6 +190,12 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
 
   const client: LanguageClientCustom | undefined = await startLSP(subscriptions);
   if (client) {
+    await Promise.all(
+      window.visibleTextEditors.map((editor) => {
+        outputChannel!.info(`onDidOpenTextDocument: ${editor.document.fileName}`);
+      }),
+    );
+
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     setTimeout(async () => {
       for (const visibleEditor of window.visibleTextEditors) {
@@ -199,22 +205,22 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
           outputChannel!.debug(
             `Calling triggerUpdateDecorationsNow for visibleEditorDocumentFileName: ${visibleEditorDocumentFileName}`,
           );
-          // void triggerUpdateDecorationsNow(
-          //   visibleEditor,
-          //   visibleEditorDocument,
-          //   visibleEditorDocumentFileName,
-          // );
+          //     // void triggerUpdateDecorationsNow(
+          //     //   visibleEditor,
+          //     //   visibleEditorDocument,
+          //     //   visibleEditorDocumentFileName,
+          //     // );
 
-          const response = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
-            rev: 'HEAD~1',
-            textDocument: {
-              uri: visibleEditorDocumentFileName,
-              languageId: visibleEditorDocument.languageId,
-            },
-          });
-          if (!visibleEditorDocument.isClosed) {
-            updateDecorations2(visibleEditor, visibleEditorDocumentFileName, response.ranges);
-          }
+          //     const response = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
+          //       rev: 'HEAD~1',
+          //       textDocument: {
+          //         uri: visibleEditorDocumentFileName,
+          //         languageId: visibleEditorDocument.languageId,
+          //       },
+          //     });
+          //     if (!visibleEditorDocument.isClosed) {
+          //       updateDecorations2(visibleEditor, visibleEditorDocumentFileName, response.ranges);
+          //     }
         }
       }
 
@@ -223,16 +229,27 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
       //     if (event.uri.scheme === 'file') {
       //       const eventFileName = event.fileName;
       //       outputChannel!.debug(`0 - onDidOpenTextDocument - eventFileName: ${eventFileName}`);
-      //       const result = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
+      //       const response = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
       //         rev: 'HEAD~1',
       //         textDocument: {
       //           uri: eventFileName,
       //           languageId: event.languageId,
       //         },
       //       });
+      //       // if (!event.isClosed) {
+      //       //   updateDecorations2(visibleEditor, visibleEditorDocumentFileName, response.ranges);
+      //       // }
+
+      //       // const result = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
+      //       //   rev: 'HEAD~1',
+      //       //   textDocument: {
+      //       //     uri: eventFileName,
+      //       //     languageId: event.languageId,
+      //       //   },
+      //       // });
 
       //       let serializedRanges = '[';
-      //       for (const range of result.ranges) {
+      //       for (const range of response.ranges) {
       //         serializedRanges += `{"start":{"line":${range.start.line},"character":${range.start.character}},"end":{"line":${range.end.line},"character":${range.end.character}}},`;
       //       }
       //       serializedRanges += ']';
