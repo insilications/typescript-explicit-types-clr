@@ -213,30 +213,30 @@
     "publish": "vsce publish"
   },
   "devDependencies": {
-    "@eslint/js": "^9.26.0",
+    "@eslint/js": "^9.28.0",
     "@types/lodash.uniqwith": "^4.5.9",
     "@types/mocha": "10.0.10",
-    "@types/node": "22.15.18",
+    "@types/node": "22.15.29",
     "@types/vscode": "^1.100.0",
-    "@typescript-eslint/eslint-plugin": "^8.32.1",
-    "@typescript-eslint/parser": "^8.32.1",
-    "@vscode/test-cli": "^0.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.33.1",
+    "@typescript-eslint/parser": "^8.33.1",
+    "@vscode/test-cli": "^0.0.11",
     "@vscode/test-electron": "^2.5.2",
     "ajv": "^8.17.1",
-    "eslint": "^9.26.0",
+    "eslint": "^9.28.0",
     "glob": "11.0.2",
-    "globals": "^16.1.0",
-    "mocha": "11.2.2",
+    "globals": "^16.2.0",
+    "mocha": "11.5.0",
     "prettier": "^3.5.3",
     "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.32.1",
+    "typescript-eslint": "^8.33.1",
     "vscode-languageserver-types": "^3.17.6-next.6",
-    "webpack": "5.99.8",
+    "webpack": "5.99.9",
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "lodash.uniqwith": "^4.5.0",
-    "vscode-languageclient": "^10.0.0-next.14"
+    "vscode-languageclient": "^10.0.0-next.15"
   }
 }
