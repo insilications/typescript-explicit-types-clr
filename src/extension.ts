@@ -2,22 +2,32 @@ import {
   commands,
   DocumentFilter,
   ExtensionContext,
-  languages,
   workspace,
   window,
   OverviewRulerLane,
   extensions,
   StatusBarAlignment,
+  languages,
+  Range,
+  MarkdownString,
+  ThemeColor,
+  Hover,
 } from 'vscode';
+import * as vscode from 'vscode';
+
 import type {
   LogOutputChannel,
   TextEditorDecorationType,
   Uri,
   Disposable,
+  Position,
   TextEditor,
   TextDocument,
   StatusBarItem,
   WorkspaceConfiguration,
+  DecorationOptions,
+  ThemableDecorationAttachmentRenderOptions,
+
   // Extension,
 } from 'vscode';
 import { GenereateTypeProvider } from './actionProvider';
@@ -36,18 +46,40 @@ import type { LanguageClientCustom } from './lspClient';
 
 export let outputChannel: LogOutputChannel | undefined;
 
-export const textEditorHighlightStyles: { latestHighlight: TextEditorDecorationType } = {
-  latestHighlight: window.createTextEditorDecorationType({
+// {
+//       before: {
+//         color: new ThemeColor('editor.foreground'),
+//         height: 'editor.lineHeight',
+//         margin: '0 0.5em 0 0',
+//       },
+//     }
+
+export const textEditorHighlightStyles: {
+  highlightDecorationType: TextEditorDecorationType;
+  decorationOptions: DecorationOptions[];
+  hoverProvider: Disposable | undefined;
+} = {
+  highlightDecorationType: window.createTextEditorDecorationType({
     backgroundColor: 'rgba(0, 255, 21, 0.2)',
     // isWholeLine: true,
     overviewRulerLane: OverviewRulerLane.Left,
     overviewRulerColor: 'rgba(43, 255, 0, 1)',
+    before: {
+      color: new ThemeColor('editor.foreground'),
+      height: 'editor.lineHeight',
+      margin: '0 0.5em 0 0',
+      // contentText: 'Blame',
+      // color: 'rgba(43, 255, 0, 1)',
+      // backgroundColor: 'rgba(0, 255, 21, 0.2)',
+    },
     // borderWidth: '1px 1px 1px 1px',
     // borderStyle: 'solid',
     // borderSpacing: '6px',
     // borderRadius: '6px',
     // borderColor: 'rgb(255, 0, 0)',
   }),
+  decorationOptions: [],
+  hoverProvider: undefined,
 };
 export let BLAME_HIGHLIGHTING_PARENT_LEVEL_STRING = 'HEAD~1';
 
@@ -126,7 +158,25 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
   // subscriptions.push(command);
   // subscriptions.push(codeActionProvider);
   // subscriptions.push(toggleQuotesCommand);
-  subscriptions.push(textEditorHighlightStyles.latestHighlight);
+  subscriptions.push(textEditorHighlightStyles.highlightDecorationType);
+
+  const decorationOptions: ThemableDecorationAttachmentRenderOptions = {
+    contentText: 'Context Text',
+    backgroundColor: 'rgba(0, 255, 21, 0.2)',
+    fontStyle: 'normal',
+    fontWeight: 'bold',
+  };
+
+  // const hoverMarkdown = new MarkdownString('**Hover Text**');
+  // hoverMarkdown.supportHtml = true;
+
+  textEditorHighlightStyles.decorationOptions.push({
+    range: new Range(0, 0, 0, 20),
+    renderOptions: {
+      before: decorationOptions,
+    },
+    // hoverMessage: hoverMarkdown,
+  });
 
   if (typescriptExplicitTypesSettings.blameHighlightingShowStatus) {
     myStatusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 1);
@@ -213,16 +263,36 @@ export async function activate({ subscriptions }: ExtensionContext): Promise<voi
           //     //   visibleEditorDocumentFileName,
           //     // );
 
-          //     const response = await client.sendRequest(didOpenTextDocumentCustomRequestType, {
-          //       rev: 'HEAD~1',
-          //       textDocument: {
-          //         uri: visibleEditorDocumentFileName,
-          //         languageId: visibleEditorDocument.languageId,
-          //       },
-          //     });
-          //     if (!visibleEditorDocument.isClosed) {
-          //       updateDecorations2(visibleEditor, visibleEditorDocumentFileName, response.ranges);
-          //     }
+          if (!visibleEditorDocument.isClosed) {
+            updateDecorations2(visibleEditor, visibleEditorDocumentFileName, [
+              new Range(0, 0, 0, 20),
+            ]);
+            textEditorHighlightStyles.hoverProvider = languages.registerHoverProvider(
+              { scheme: 'file', pattern: visibleEditorDocument.fileName },
+              {
+                provideHover(document: TextDocument, position: Position) {
+                  outputChannel!.debug(
+                    `position.character: ${position.character}, position.line: ${position.line}, document.uri: ${document.uri.toString()}`,
+                  );
+
+                  if (position.character > 0) {
+                    return undefined;
+                  }
+
+                  const content = new MarkdownString();
+                  content.appendMarkdown(
+                    `**Blame Information**\n\n` +
+                      `File: ${document.fileName}\n` +
+                      `Line: ${position.line + 1}\n` +
+                      `Character: ${position.character}`,
+                  );
+                  content.isTrusted = true;
+                  return new Hover(content);
+                },
+              },
+            );
+            subscriptions.push(textEditorHighlightStyles.hoverProvider);
+          }
         }
       }
 

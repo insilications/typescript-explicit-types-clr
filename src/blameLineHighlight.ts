@@ -219,11 +219,11 @@ export async function updateDecorations(editor: TextEditor, fileName: string) {
     outputChannel!.info(`updateDecorations: ${serializedRanges}`);
 
     if (ranges.length > 0) {
-      editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
+      editor.setDecorations(textEditorHighlightStyles.highlightDecorationType, ranges);
       outputChannel!.debug(`Decorations set for fileName: ${fileName}`);
     }
   } catch (error: unknown) {
-    editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+    editor.setDecorations(textEditorHighlightStyles.highlightDecorationType, []);
     outputChannel!.error(`setDecorations failed for ${fileName}:`, error); // Log errors
     outputChannel!.show();
   }
@@ -238,11 +238,15 @@ export function updateDecorations2(editor: TextEditor, fileName: string, ranges:
 
   try {
     if (ranges.length > 0) {
-      editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
+      // editor.setDecorations(textEditorHighlightStyles.latestHighlight, ranges);
+      editor.setDecorations(
+        textEditorHighlightStyles.highlightDecorationType,
+        textEditorHighlightStyles.decorationOptions,
+      );
       outputChannel!.debug(`0 - updateDecorations2 - Decorations set for fileName: ${fileName}`);
     }
   } catch (error: unknown) {
-    editor.setDecorations(textEditorHighlightStyles.latestHighlight, []);
+    editor.setDecorations(textEditorHighlightStyles.highlightDecorationType, []);
     outputChannel!.error(`1 - updateDecorations2 - setDecorations failed for ${fileName}:`, error); // Log errors
     outputChannel!.show();
   }
